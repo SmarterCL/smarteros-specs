@@ -1,54 +1,42 @@
-# SmarterOS - Specifications Repository
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![Status](https://img.shields.io/badge/status-development-yellow.svg)
-![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 
-**SmarterOS** is a multi-tenant business automation operating system. This repository contains the complete specifications, architecture decisions, and configuration for the entire ecosystem.
+# SmarterOS – Especificaciones del Sistema Operativo Comercial
 
-## 🎯 What is SmarterOS?
+Este repositorio contiene las specs centrales de SmarterOS, un sistema operativo para negocios digitales basado en ciclos diarios, automatización y arquitectura multi-tenant.
 
-SmarterOS is like **Terraform + Kubernetes + Ansible** but for your **entire business stack**:
+SmarterOS combina:
 
-- **Infrastructure as Code** → `infra/infrastructure.yml`
-- **Services as Code** → `services/registry.yml`
-- **Tenants as Code** → `tenants/registry.yml`
-- **Decisions as Code** → `decision-tree.yml`
-- **Everything as Code** → `smarteros-specs/`
+- **Odoo** como núcleo operativo (ERP)
+- **Shopify + MCP** como capa comercial
+- **n8n** como motor de reglas
+- **Metabase** como analítica central
+- **AI Smarterbot** como copiloto
+- **Hostinger VPS** como entorno de ejecución
+- **WhatsApp** como panel del fundador
 
-A single command regenerates your entire world:
+Toda la infraestructura, decisiones y servicios se describen aquí como fuente única de verdad (Single Source of Truth).
 
-```bash
-smos deploy all
-```
+📁 **Contenido del repositorio**
 
-## 📦 What's Inside
+- `index.yml` – Entrada principal del OS
+- `smos-version.yml` – Versión del sistema
+- `decision-tree.yml` – Decisiones arquitectónicas
+- `infra/` – Infraestructura, VPS y red
+- `services/` – Catálogo de microservicios
+- `tenants/` – Plantillas y registro multi-tenant
 
-```
-smarteros-specs/
-├── index.yml                   # Entry point to the OS
-├── smos-version.yml            # Version control (v0.1.0 "Genesis")
-├── smos-runtime-mode.env       # Runtime configuration
-├── decision-tree.yml           # 12+ architectural decisions documented
-├── tenants/
-│   ├── registry.yml           # Registry of all tenants
-│   └── template.yml           # Template for creating tenants
-├── services/
-│   └── registry.yml           # Catalog of 15+ microservices
-├── infra/
-│   └── infrastructure.yml     # Complete VPS, DNS, Docker specs
-└── mcp/                       # MCP configurations (coming soon)
-```
+🚀 **Objetivo**
 
-## 🏗️ Architecture
+Definir una arquitectura clara, reproducible y versionada para desplegar SmarterOS en cualquier entorno.
 
-### Frontend Services
-- **app.smarterbot.cl** - Main web application (Next.js 15)
-- **dash.smarterbot.cl** - Multi-tenant dashboard (planned)
-- **mkt.smarterbot.cl** - Marketing site (planned)
-- **store.smarterbot.cl** - Skills marketplace (planned)
-- **docs.smarterbot.cl** - Documentation portal (planned)
+📦 **Uso**
 
+Este repositorio es consumido por la CLI smos y por los agentes de automatización para:
+
+- Crear tenants
+- Sincronizar servicios
+- Versionar cambios
+- Ejecutar despliegues reproducibles
 ### Backend Services
 - **N8N** - Workflow automation
 - **Supabase** - PostgreSQL + Realtime + Storage
