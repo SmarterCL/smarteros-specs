@@ -434,17 +434,71 @@ providers:
     tier: 5
     category: "devops"
     primary_agent: "executor-codex"
+    secondary_agents: ["director-gemini"]
+    
+    mcp_server:
+      name: "cloudflare-dns-analytics"
+      repository: "https://github.com/cloudflare/mcp-server-cloudflare"
+      app: "dns-analytics"
+      deployment: "remote"
+      endpoint: "https://dns-analytics.mcp.cloudflare.com/mcp"
+      connection: "mcp-remote"
     
     auth:
-      method: "vault"
-      path: "smarteros/mcp/cloudflare"
-      keys: ["api_token", "zone_id"]
+      method: "api-token"
+      vault_path: "smarteros/mcp/cloudflare"
+      keys: ["api_token", "email", "zone_id"]
+      vault_policy: "mcp-cloudflare-dns-read"
+      
+      setup: |
+        1. Create API Token at Cloudflare Dashboard with Zone:DNS:Edit
+        2. Store in Vault: vault kv put smarteros/mcp/cloudflare api_token=xxx email=xxx zone_id=xxx
+        3. Apply policy: vault policy write mcp-cloudflare-dns-read vault/policies/mcp-cloudflare-dns-read.hcl
     
     capabilities:
-      codex: ["dns_update", "cache_purge", "read_analytics"]
+      codex:
+        dns_management:
+          - "zones_list"
+          - "dns_records_list"
+          - "dns_records_create"
+          - "dns_records_update"
+          - "dns_records_delete"
+        
+        use_cases:
+          - "Create subdomains for new services (mkt, call, fulldaygo)"
+          - "Update DNS during deployments"
+          - "DNS migration automation"
+      
+      gemini:
+        dns_analytics:
+          - "dns_analytics_report"
+          - "dns_settings_get"
+          - "dns_optimization_suggest"
+        
+        read_only: true
+        use_cases:
+          - "DNS health analysis"
+          - "Traffic pattern analysis"
+          - "Optimization recommendations"
     
     rate_limit: "1200/5min"
     fallback: "manual_dns"
+    
+    tools_count: 9
+    connection_test: "zones_list"
+    required: false
+    
+    notes: |
+      Cloudflare MCP Server oficial con soporte para DNS management y analytics.
+      
+      Ventajas:
+      - Interfaz conversacional natural para AI agents
+      - Validación automática de parámetros
+      - Optimizaciones y sugerencias built-in
+      - Remote MCP via mcp-remote
+      
+      Use API token mode (not OAuth) para automation.
+      Configurar en Claude Desktop / Cline / Copilot via mcp-remote.
   
   aws:
     tier: 5
