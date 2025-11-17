@@ -5,8 +5,8 @@ version: "2.0"
 updated: "2025-11-16"
 
 metadata:
-  total_providers: 27
-  active_providers: 27
+  total_providers: 28
+  active_providers: 28
   vault_path: "smarteros/mcp/"
   registry_spec: "smarteros-specs/agents/mcp-registry.yml"
   bootstrap_script: "scripts/bootstrap-mcp-vault.sh"
@@ -288,6 +288,19 @@ tier_5_devops:
       secrets:
         - api_key
         - database_id
+    
+    - name: "vercel"
+      vault_path: "smarteros/mcp/vercel"
+      required: false
+      agents: ["codex", "gemini"]
+      status: "active"
+      mcp_server: "mcp-on-vercel"
+      npm_package: "mcp-handler"
+      config: "mcp/vercel.yml"
+      secrets:
+        - vercel_token
+        - vercel_team_id
+        - vercel_project_id
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Agent Access Summary
@@ -295,13 +308,13 @@ tier_5_devops:
 
 agent_access:
   director-gemini:
-    total: 17
+    total: 18
     required: ["github", "vault", "clerk", "smartermcp", "supabase"]
     optional:
       tier_2: ["shopify", "metabase", "odoo", "n8n", "stripe"]
       tier_3: ["openai", "anthropic", "google"]
       tier_4: ["slack", "twilio", "whatsapp", "mailgun"]
-      tier_5: ["linear", "notion"]
+      tier_5: ["cloudflare", "vercel", "linear", "notion"]
   
   writer-copilot:
     total: 6
@@ -311,12 +324,12 @@ agent_access:
       tier_3: ["context7"]
   
   executor-codex:
-    total: 11
+    total: 12
     required: ["github", "vault", "clerk", "smartermcp", "docker", "hostinger"]
     optional:
       tier_2: ["n8n"]
       tier_4: ["slack"]
-      tier_5: ["cloudflare", "aws", "caddy"]
+      tier_5: ["cloudflare", "vercel", "aws", "caddy"]
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Vault Policies Summary

@@ -5,7 +5,7 @@ description: "Registro centralizado de 25 MCP providers con asignación a agente
 updated: "2025-11-16"
 
 metadata:
-  total_providers: 30
+  total_providers: 31
   total_tiers: 6
   vault_base_path: "smarteros/mcp/"
   policy_prefix: "mcp-"
@@ -679,6 +679,59 @@ providers:
       Use API token mode (not OAuth) para automation.
       Configurar en Claude Desktop / Cline / Copilot via mcp-remote.
   
+  vercel:
+    tier: 5
+    category: "devops"
+    primary_agent: "executor-codex"
+    secondary_agents: ["director-gemini"]
+    
+    mcp_server:
+      name: "mcp-on-vercel"
+      npm_package: "mcp-handler"
+      repository: "https://github.com/vercel-labs/mcp-on-vercel"
+      deployment: "vercel-functions"
+      template: "https://vercel.com/templates/other/model-context-protocol-mcp-with-vercel-functions"
+      connection: "mcp-remote"
+    
+    auth:
+      method: "api-token"
+      vault_path: "smarteros/mcp/vercel"
+      keys: ["vercel_token", "vercel_team_id", "vercel_project_id"]
+      vault_policy: "mcp-vercel-read"
+    
+    capabilities:
+      codex:
+        deployment: ["deploy_mcp_server", "update_env_vars", "check_status", "view_logs"]
+        management: ["list_projects", "create_project", "delete_deployment"]
+        
+        use_cases:
+          - "Deploy custom MCP wrappers (Clerk, Shopify, Supabase)"
+          - "Manage environment variables"
+          - "Monitor serverless functions"
+      
+      gemini:
+        monitoring: ["view_analytics", "check_performance", "analyze_errors"]
+        
+        use_cases:
+          - "Performance optimization"
+          - "Cost analysis"
+          - "Error pattern detection"
+    
+    rate_limit: "1000/minute"
+    tools_count: 10
+    fallback: "manual_deploy"
+    
+    notes: |
+      Vercel MCP Server para deployar MCP servers como Vercel Functions.
+      Template oficial con mcp-handler y StreamableHTTP transport.
+      
+      Use cases:
+      - Deploy Clerk auth wrapper
+      - Deploy Shopify product wrapper
+      - Deploy Supabase query wrapper
+      
+      Fluid Compute required para max_duration > 10s
+  
   aws:
     tier: 5
     category: "devops"
@@ -811,9 +864,9 @@ access_matrix:
     tier_2: ["shopify", "metabase", "odoo", "n8n", "stripe"]
     tier_3: ["openai", "anthropic", "google"]
     tier_4: ["slack", "twilio", "whatsapp", "mailgun"]
-    tier_5: ["linear", "notion"]
+    tier_5: ["cloudflare", "vercel", "linear", "notion"]
     tier_6: ["blogbowl-filesystem", "callcenter-conversation", "callcenter-speech"]
-    total: 20
+    total: 21
   
   writer-copilot:
     tier_1: ["github", "vault", "clerk", "smartermcp", "supabase"]
@@ -825,9 +878,9 @@ access_matrix:
     tier_1: ["github", "vault", "clerk", "smartermcp", "docker", "hostinger"]
     tier_2: ["n8n"]
     tier_4: ["slack"]
-    tier_5: ["cloudflare", "aws", "caddy"]
+    tier_5: ["cloudflare", "vercel", "aws", "caddy"]
     tier_6: ["callcenter-conversation"]
-    total: 12
+    total: 13
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Health & Monitoring
