@@ -1,161 +1,322 @@
-# ARCHITECTURE.md - Estructura SmarterOS
+# 🏗️ SmarterOS - Architecture Documentation
 
-> **ACTUALIZADO**: 2025-11-16 — Añadido **Tier 0: Infrastructure** con Hostinger API MCP para gestión autónoma de infraestructura.
+## 🎯 Overview
+
+SmarterOS is a **multi-tenant cognitive operating system** for Chilean SMBs, built on a microservices architecture with SSO, multi-agent AI, and RUT-based isolation.
 
 ---
 
-## 🏗️ Arquitectura General
+## 📊 High-Level Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│               SMARTEROS OPERATING SYSTEM                 │
-│                 (AI-Managed Infrastructure)              │
-│                                                          │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │ 🎯 TIER 0: Infrastructure (NUEVO - AI Control) │    │
-│  │                                                 │    │
-│  │  • Hostinger API MCP (VPS Lifecycle)           │    │
-│  │  • VPS: Start/Stop/Reboot/Backup/Restore       │    │
-│  │  • SSH Keys Management (API)                   │    │
-│  │  • Firewall Configuration                      │    │
-│  │  • Docker Projects Management                  │    │
-│  │  • Domain Registration & DNS                   │    │
-│  │  • Billing & Usage Monitoring                  │    │
-│  │                                                 │    │
-│  │  Primary Agent: executor-codex                 │    │
-│  │  Secondary Agent: director-gemini (read-only)  │    │
-│  │  Vault: smarteros/mcp/hostinger                │    │
-│  └─────────────────────────────────────────────────┘    │
-│             ↓ Controls & Provisions ↓                    │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐                    │
-│  │   Frontend   │  │   Backend    │                    │
-│  │              │  │              │                    │
-│  │ • app.smarterbot.cl (Next.js)  │                    │
-│  │ • tienda.smarterbot.cl (Next.js Storefront) │       │
-│  └──────────────┘  └──────────────┘                    │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐     │
-│  │         Core Services Layer (TIER 1)           │     │
-│  │                                                │     │
-│  │  • Odoo (ERP)                                 │     │
-│  │  • N8N (Automation)                           │     │
-│  │  • Supabase (Database)                        │     │
-│  │  • Metabase (Analytics)                       │     │
-│  │  • Vault (Secrets) ← Core Infrastructure     │     │
-│  └────────────────────────────────────────────────┘     │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐     │
-│  │       Communication Layer (TIER 4)             │     │
-│  │                                                │     │
-│  │  • Chatwoot (CRM)                             │     │
-│  │  • Botpress (AI Bots)                         │     │
-│  │  • Resend (Email)                             │     │
-│  └────────────────────────────────────────────────┘     │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐     │
-│  │    Physical Infrastructure (SSH Direct)        │     │
-│  │                                                │     │
-│  │  • Hostinger VPS: 89.116.23.167               │     │
-│  │    - CPU: 2 cores                             │     │
-│  │    - RAM: 4GB                                 │     │
-│  │    - Disk: 100GB SSD                          │     │
-│  │    - OS: Ubuntu 24.04 LTS                     │     │
-│  │                                                │     │
-│  │  • Dokploy (Container Orchestration)          │     │
-│  │  • Traefik (Reverse Proxy & SSL)              │     │
-│  │  • Cloudflare (DNS, CDN, DDoS Protection)     │     │
-│  └────────────────────────────────────────────────┘     │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐     │
-│  │      Integration Layer (25 MCP Providers)      │     │
-│  │                                                │     │
-│  │  Tier 0: Hostinger                            │     │
-│  │  Tier 1: GitHub, Docker, Vault, Supabase      │     │
-│  │  Tier 2: N8N, Odoo, Metabase, FastAPI Gateway │     │
-│  │  Tier 3: Claude, Context7, Deepgram, Assembly │     │
-│  │  Tier 4: Slack, Chatwoot, Telegram            │     │
-│  │  Tier 5: AWS, Cloudflare, Sentry, PostHog     │     │
-│  └────────────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│              Internet Users                      │
+└────────────────┬────────────────────────────────┘
+                 │
+    ┌────────────┴─────────────┐
+    │                          │
+┌───▼─────────┐        ┌──────▼────────┐
+│  Cloudflare │        │    Vercel     │
+│    (WAF)    │        │  (Frontend)   │
+└───┬─────────┘        └──────┬────────┘
+    │                         │
+┌───▼─────────────────────────▼────────┐
+│         Caddy Reverse Proxy          │
+│         (SSL/TLS Termination)        │
+└───┬──────────────────────────────────┘
+    │
+┌───▼──────────────────────────────────┐
+│       API Gateway (FastAPI)          │
+│   - JWT Verification                 │
+│   - Rate Limiting                    │
+│   - Tenant Resolution                │
+└───┬──────────────────────────────────┘
+    │
+    ├──────────┬──────────┬──────────┬──────────┐
+    │          │          │          │          │
+┌───▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐
+│ Odoo  │  │ n8n  │  │Chat │  │Bot  │  │ KPI  │
+│ ERP   │  │Auto │  │woot │  │press│  │Base │
+└───┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘
+    │         │         │         │         │
+    └─────────┴─────────┴─────────┴─────────┘
+                        │
+            ┌───────────▼────────────┐
+            │   Data Layer           │
+            ├────────────────────────┤
+            │ PostgreSQL (Odoo)      │
+            │ Supabase (Multi-tenant)│
+            │ Redis (Cache)          │
+            │ S3 (Files)             │
+            └────────────────────────┘
 ```
 
 ---
 
-## 🎯 Tier 0: Infrastructure Autonomy (NUEVO)
+## 🧩 Component Details
 
-**Hostinger API MCP** permite que el tri-agente gestione infraestructura de forma autónoma:
+### Frontend Layer (Vercel)
 
-### 🤖 Capacidades AI-Managed
+#### 1. Landing Page
+- **URL:** `smarterbot.cl`
+- **Tech:** Static HTML + Tailwind
+- **Purpose:** Marketing, pricing, CTA
 
-1. **VPS Lifecycle Management**
-   - Codex puede: start, stop, reboot, purchase, setup VPS
-   - Auto-recovery: Si VPS cae, Codex lo detecta y restaura desde backup
-   - Scaling: Crear nuevos VPS para tenants enterprise on-demand
+#### 2. Portal Maestro
+- **URL:** `app.smarterbot.cl`
+- **Tech:** Next.js 14 + Clerk
+- **Features:**
+  - Dashboard with 7 modules
+  - SSO integration
+  - Multi-tenant routing
+  - Responsive design
 
-2. **Automated Backups & Recovery**
-   - Backups diarios automáticos (2am)
-   - Retención 7 días con cleanup automático
-   - Disaster recovery con un comando: `/restore-vps <backup_id>`
+#### 3. CRM Frontend
+- **URL:** `crm.smarterbot.cl`
+- **Tech:** Next.js 14
+- **Features:**
+  - Contact management
+  - Sales pipeline
+  - Reports
 
-3. **SSH Keys API Management**
-   - Rotación automática mensual de SSH keys
-   - Deploy keys por tenant con acceso granular
-   - Cleanup de keys antiguas (mantiene últimas 2)
-
-4. **Firewall & Security**
-   - Activar firewalls production automáticamente
-   - Reglas por tenant con aislamiento de red
-   - Monitoreo de seguridad con alertas a Slack
-
-5. **Docker Projects**
-   - Updates automáticos de n8n/Odoo/Metabase
-   - Health checks post-update
-   - Rollback automático si falla
-
-6. **Domain Operations**
-   - Check availability para nuevos tenants
-   - Enable WHOIS privacy automáticamente
-   - Configure domain forwarding
-
-7. **Billing Automation**
-   - Monitor usage y costos por tenant
-   - Alertas cuando se acerca límite de plan
-   - Auto-upgrade si tenant crece
-
-### 🔐 Acceso Dual (Complementario)
-
-**API MCP** (Management Operations)
-- Vault: `smarteros/mcp/hostinger`
-- Auth: Bearer token (api_token)
-- Agent: executor-codex (primary), director-gemini (read-only)
-- Use: VPS lifecycle, backups, firewall, domains, billing
-
-**SSH Direct** (Deploy Operations)
-- Vault: `smarteros/ssh/deploy`
-- Auth: Ed25519 key pair (private_key, public_key)
-- Agent: executor-codex
-- Use: rsync files, systemctl, shell commands, log access
-
-Ambos métodos coexisten y se complementan. API MCP controla la infraestructura, SSH direct ejecuta deploys.
+#### 4. Marketing Center
+- **URL:** `mkt.smarterbot.cl`
+- **Tech:** Next.js 14 + Recharts
+- **Features:**
+  - Campaign management
+  - Lead capture
+  - Analytics
 
 ---
 
-## 🔌 Multi-Tenant Architecture
+### Backend Layer (VPS)
 
-Cada tenant tiene:
-- Subdominio/app Next.js propio
-- Datos aislados en Supabase (RLS por tenant)
-- Workflows n8n dedicados
-- Inbox Chatwoot propio
-- Bot Botpress entrenado (intents/flows)
-- Entidad/Company en Odoo (ventas/inventario)
-- KPIs Metabase propios
-- Claves y secretos aislados en Vault
+#### 1. API Gateway
+- **Tech:** FastAPI 0.104+
+- **Port:** 8001
+- **Functions:**
+  - JWT verification (Clerk)
+  - Tenant resolution (RUT)
+  - Rate limiting
+  - Request routing
+  - Audit logging (MCP)
 
-## 🔄 Data Flow
+#### 2. ERP (Odoo)
+- **Version:** 19.0
+- **Port:** 8069
+- **Database:** PostgreSQL 16
+- **Features:**
+  - Multi-company (tenant isolation)
+  - Custom theme (GitHub Actions)
+  - Auth addon (Clerk SSO)
+  - E-commerce module
 
-1. Cliente → Web/Form → FastAPI → Chatwoot → Botpress (intent) → Odoo (lead/order)
-2. Productos/Inventario → Odoo → n8n sync → Supabase cache → Frontend
-3. Eventos (Chatwoot/Botpress/Odoo) → n8n → Supabase events → Metabase dashboards
-4. Emails → FastAPI → Resend → Cliente/Admin
+#### 3. Automatizaciones (n8n)
+- **Version:** Latest
+- **Port:** 5678
+- **Features:**
+  - Visual workflows
+  - Multi-tenant credentials
+  - Webhook management
+  - 200+ integrations
+
+#### 4. Chat (Chatwoot)
+- **Version:** Latest
+- **Port:** 3000
+- **Features:**
+  - Omnichannel inbox
+  - WhatsApp / Email / Web
+  - Agent roles
+  - Bot integration
+
+#### 5. Bot IA (Botpress)
+- **Version:** Latest
+- **Port:** 3100
+- **Features:**
+  - NLP engine
+  - Contextual responses
+  - Lead qualification
+  - Human handoff
+
+#### 6. KPI (Metabase)
+- **Version:** Latest
+- **Port:** 3030
+- **Features:**
+  - JWT embedding
+  - Multi-tenant filtering
+  - Custom dashboards
+  - Supabase connector
+
+---
+
+## 🔐 Security Architecture
+
+### Authentication Flow
+
+```
+User → Portal
+  ↓
+Clerk OAuth
+  ↓
+JWT Token
+  ↓
+API Gateway (verify)
+  ↓
+Tenant Resolution (RUT)
+  ↓
+Service (Odoo/CRM/etc)
+  ↓
+Auto-login (if SSO)
+```
+
+### Multi-Tenant Isolation
+
+```sql
+-- Supabase RLS
+CREATE POLICY "Users can only see their tenant data"
+ON public.users
+FOR SELECT
+USING (tenant_id = current_setting('app.tenant_id')::uuid);
+
+-- Odoo Multi-Company
+SELECT * FROM res_partner
+WHERE company_id = %s;
+```
+
+---
+
+## 📡 Data Flow
+
+### Example: New Lead Capture
+
+```
+1. User fills form on mkt.smarterbot.cl
+2. POST to API Gateway (/leads/create)
+3. API Gateway:
+   - Verifies JWT
+   - Resolves tenant_id from RUT
+   - Rate limit check
+4. Stores in Supabase (leads table)
+5. Triggers n8n workflow via webhook
+6. n8n:
+   - Enriches lead data (LinkedIn, etc)
+   - Creates contact in Odoo CRM
+   - Sends WhatsApp via Chatwoot
+   - Starts Bot conversation (Botpress)
+7. Updates dashboard in Metabase
+8. Portal shows notification
+```
+
+---
+
+## 🔄 Deployment Architecture
+
+### CI/CD Pipeline
+
+```
+GitHub Push
+  ↓
+GitHub Actions
+  ├─ Lint & Test
+  ├─ Build Docker Image
+  ├─ Push to Registry
+  └─ Deploy to VPS (Vercel for Frontend)
+```
+
+### Infrastructure as Code
+
+```yaml
+# docker-compose.yml (simplified)
+services:
+  odoo:
+    image: smarteros/odoo:latest
+    environment:
+      - TENANT_ID=${TENANT_ID}
+    networks:
+      - smarteros-network
+  
+  api-gateway:
+    image: smarteros/api:latest
+    depends_on:
+      - odoo
+    networks:
+      - smarteros-network
+```
+
+---
+
+## 📊 Scalability
+
+### Horizontal Scaling
+
+```
+Load Balancer (Caddy)
+  ├─ Odoo Instance 1
+  ├─ Odoo Instance 2
+  └─ Odoo Instance 3
+
+Database (PostgreSQL)
+  ├─ Master (Write)
+  └─ Replica (Read)
+```
+
+### Caching Strategy
+
+```
+Redis Cache
+├─ Session data (TTL 30min)
+├─ API responses (TTL 5min)
+└─ Tenant configs (TTL 1h)
+```
+
+---
+
+## 🔍 Monitoring & Observability
+
+### Metrics (MCP Tools)
+
+```
+- API response time
+- Database query time
+- Active sessions
+- Error rate
+- Tenant usage
+- Webhook success rate
+```
+
+### Logging
+
+```
+Format: JSON
+Destination: Supabase + CloudWatch
+Retention: 90 days
+```
+
+---
+
+## 📈 Performance Targets
+
+```
+- API Response: < 200ms (p95)
+- Page Load: < 2s (p95)
+- Uptime: > 99.9%
+- Database Queries: < 100ms (p95)
+```
+
+---
+
+## 🚀 Future Architecture (2026)
+
+```
++ Mobile App (React Native)
++ Edge Computing (Cloudflare Workers)
++ ML Pipeline (Model serving)
++ Event Streaming (Kafka)
++ Search Engine (Elasticsearch)
+```
+
+---
+
+**Version:** 1.0  
+**Last Updated:** 2025-11-23  
+**Maintainer:** SmarterCL Engineering
