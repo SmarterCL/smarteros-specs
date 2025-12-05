@@ -28,7 +28,7 @@ Status: **Container Running & Operational**
 
 ### Environment Variables
 ```bash
-VAULT_ADDR=http://89.116.23.167:8200
+VAULT_ADDR=https://vault.smarterbot.cl
 VAULT_TOKEN=${VAULT_TOKEN}  # Set via env
 TRANSPORT_MODE=http
 TRANSPORT_PORT=8080

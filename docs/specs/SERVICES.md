@@ -19,7 +19,7 @@
 - **WhatsApp Business API** - Canal principal
 
 ### Infrastructure
-- **Hostinger VPS** - 89.116.23.167, Ubuntu 24.04, 8GB RAM
+- **Hostinger VPS** - Managed Instance
 - **Dokploy 0.9.0** - Container orchestration
 - **Traefik 2.11** - Reverse proxy + SSL
 - **PostgreSQL 16** - Database principal

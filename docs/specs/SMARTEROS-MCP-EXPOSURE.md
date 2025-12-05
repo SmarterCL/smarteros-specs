@@ -1,6 +1,6 @@
 # 🌐 SmarterOS - Public MCP Registry
 
-**Live Registry**: http://89.116.23.167:3090  
+**Live Registry**: https://registry.smarterbot.cl  
 **Future Domain**: https://mcp.smarterbot.cl  
 **Date**: 2025-11-19
 
@@ -235,7 +235,7 @@ Secrets:
 
 **Internal** (VPS network):
 ```
-http://89.116.23.167:3090
+https://registry.smarterbot.cl
 ```
 
 **Future Public** (after DNS):

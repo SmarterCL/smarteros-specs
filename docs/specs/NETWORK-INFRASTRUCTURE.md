@@ -22,7 +22,7 @@
 
 ## DNS Configuration
 
-All domains point to: `89.116.23.167`
+All domains point to: `[Managed IP]`
 
 ### DNS Records Type
 - **A Records**: All domains configured as A records pointing to VPS IP

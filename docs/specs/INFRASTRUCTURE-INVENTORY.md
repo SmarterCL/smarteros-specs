@@ -1,6 +1,6 @@
 # SmarterOS Infrastructure Inventory
 **Generated:** 2025-11-18T20:59:31Z  
-**Server:** 89.116.23.167 (Hostinger VPS)  
+**Server:** [Managed Service] (Hostinger VPS)  
 **DNS Zones:** smarterbot.cl, smarterbot.store
 
 ---
@@ -10,21 +10,21 @@
 ### smarterbot.cl (Primary Domain)
 | Subdomain | Type | Target | Service |
 |-----------|------|--------|---------|
-| kpi | A | 89.116.23.167 | Metabase Dashboard |
-| chatwoot | A | 89.116.23.167 | Customer Support |
-| chat | A | 89.116.23.167 | Botpress Chat |
-| n8n | A | 89.116.23.167 | Workflow Automation |
-| odoo | A | 89.116.23.167 | ERP System |
-| portainer | A | 89.116.23.167 | Container Management |
-| dokploy | A | 89.116.23.167 | Deployment Platform |
-| mkt | A | 89.116.23.167 | Marketing Platform (BlogBowl) |
+| kpi | A | [Managed Service] | Metabase Dashboard |
+| chatwoot | A | [Managed Service] | Customer Support |
+| chat | A | [Managed Service] | Botpress Chat |
+| n8n | A | [Managed Service] | Workflow Automation |
+| odoo | A | [Managed Service] | ERP System |
+| portainer | A | [Managed Service] | Container Management |
+| dokploy | A | [Managed Service] | Deployment Platform |
+| mkt | A | [Managed Service] | Marketing Platform (BlogBowl) |
 
 ### smarterbot.store (Hostinger Domain)
 | Subdomain | Type | Target | Service |
 |-----------|------|--------|---------|
-| dokploy | A | 89.116.23.167 | Deployment Platform |
-| ai | A | 89.116.23.167 | Nexa AI Server |
-| mkt | A | 89.116.23.167 | Marketing Platform (BlogBowl) |
+| dokploy | A | [Managed Service] | Deployment Platform |
+| ai | A | [Managed Service] | Nexa AI Server |
+| mkt | A | [Managed Service] | Marketing Platform (BlogBowl) |
 
 ---
 
@@ -123,7 +123,7 @@ smarter-net (bridge)
 All domains listed above have automatic HTTPS via Caddy.
 
 ### IP Access Policy
-- Direct IP access (http://89.116.23.167) → redirects to dokploy.smarterbot.store
+- Direct IP access (http://[Managed Service]) → redirects to dokploy.smarterbot.store
 - HTTPS disabled for IP addresses (prevents cert errors)
 
 ---
@@ -154,10 +154,10 @@ All domains listed above have automatic HTTPS via Caddy.
 ## 🔧 Configuration Files
 
 ### Docker Compose Files
-- `/root/docker-compose-caddy.yml` - Reverse proxy
-- `/root/docker-compose-blogbowl.yml` - Marketing platform
-- `/root/docker-compose-nexa.yml` - AI server
-- `/root/docker-compose-vault.yml` - Secrets management
+- `/root/service-config.yml` - Reverse proxy
+- `/root/service-config.yml` - Marketing platform
+- `/root/service-config.yml` - AI server
+- `/root/service-config.yml` - Secrets management
 
 ### Service Configs
 - `/root/Caddyfile` - Reverse proxy configuration
@@ -215,7 +215,7 @@ docker exec caddy-proxy caddy reload --config /etc/caddy/Caddyfile
 
 ## 📝 Notes
 
-1. **Primary IP:** 89.116.23.167
+1. **Primary IP:** [Managed Service]
 2. **Network Mode:** All services on `smarter-net` bridge network
 3. **SSL:** Automatic via Caddy + Let's Encrypt
 4. **Domains:** .cl domains for main services, .store for Hostinger-specific
