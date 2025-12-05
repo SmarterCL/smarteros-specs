@@ -4,6 +4,16 @@ SmarterOS es un sistema operativo de código abierto, autoalojado en contenedore
 
 Está diseñado para operar bajo RUT empresa, con validación tributaria y cumplimiento automático con el SII (Servicio de Impuestos Internos), manteniendo la normativa actualizada en tiempo real.
 
+## Estructura del Repositorio
+
+- **[guias/](guias/)**: Documentación, especificaciones y manuales.
+  - **[guias/especificaciones/](guias/especificaciones/)**: Especificaciones técnicas.
+  - **[guias/guia-usuario/](guias/guia-usuario/)**: Guías de uso.
+- **[servicios/](servicios/)**: Definiciones de servicios por dominio (API, App, ERP, CRM).
+- **[nucleo/](nucleo/)**: Corazón del sistema (Agentes y Flujos de negocio).
+- **[infraestructura/](infraestructura/)**: Definiciones de infraestructura y flujos CI/CD.
+- **[mcp/](mcp/)**: Protocolo de Contexto de Modelos (Specs).
+
 ## Qué permite hacer SmarterOS
 
 - **Crear una empresa digital operativa en horas, no en meses**
