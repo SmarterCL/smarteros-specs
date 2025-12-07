@@ -1,0 +1,978 @@
+openapi: 3.1.0
+info:
+  title: SmarterOS API Gateway
+  description: |
+    API Gateway for SmarterOS multi-tenant platform.
+    
+    **Architecture:**
+    - `api.smarterbot.cl` - REST API for identity, tenants, services, templates, integrations
+    - `mcp.smarterbot.cl` - MCP Hub router for agent tools
+    - `vault.smarterbot.cl` - Internal Vault + Vault MCP Server for secrets
+    
+  version: 1.0.0
+  contact:
+    name: SmarterOS Team
+    email: dev@smarterbot.cl
+
+servers:
+  - url: https://api.smarterbot.cl
+    description: Production API
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - ClerkAuth: []
+
+tags:
+  - name: identity
+    description: Authentication & authorization via Clerk
+  - name: tenants
+    description: Tenant management (RUT-based)
+  - name: services
+    description: Service registry & health
+  - name: templates
+    description: Template marketplace (SmarterBOT.store)
+  - name: chatwoot
+    description: CRM & customer support
+  - name: odoo
+    description: ERP & invoicing
+  - name: shopify
+    description: Ecommerce integration
+  - name: ml
+    description: MercadoLibre marketplace
+  - name: hostinger
+    description: VPS & container management
+  - name: analytics
+    description: Metrics & reporting
+  - name: hooks
+    description: Webhooks & event handlers
+  - name: mcp
+    description: MCP tools & permissions
+
+paths:
+  # ==========================================
+  # IDENTITY
+  # ==========================================
+  /identity/me:
+    get:
+      tags: [identity]
+      summary: Get current user info
+      description: Returns Clerk user info + associated tenants
+      responses:
+        '200':
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+
+  /identity/tenants:
+    get:
+      tags: [identity]
+      summary: List user's tenants
+      description: Returns all tenants owned by current user
+      responses:
+        '200':
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tenant'
+
+  # ==========================================
+  # TENANTS
+  # ==========================================
+  /tenants:
+    get:
+      tags: [tenants]
+      summary: List tenants (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, suspended, trial]
+        - name: plan
+          in: query
+          schema:
+            type: string
+            enum: [basic, pro, enterprise]
+      responses:
+        '200':
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tenant'
+    
+    post:
+      tags: [tenants]
+      summary: Create new tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+      responses:
+        '201':
+          description: Tenant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+
+  /tenants/{rut}:
+    get:
+      tags: [tenants]
+      summary: Get tenant by RUT
+      parameters:
+        - name: rut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tenant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+    
+    patch:
+      tags: [tenants]
+      summary: Update tenant
+      parameters:
+        - name: rut
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantUpdate'
+      responses:
+        '200':
+          description: Tenant updated
+
+  /tenants/{rut}/keys:
+    get:
+      tags: [tenants]
+      summary: List tenant Vault keys
+      description: Returns Vault paths only, never actual secrets
+      parameters:
+        - name: rut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of key references
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantKey'
+
+  # ==========================================
+  # SERVICES
+  # ==========================================
+  /services:
+    get:
+      tags: [services]
+      summary: List available services
+      responses:
+        '200':
+          description: Service catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+  /services/{tenantRut}:
+    get:
+      tags: [services]
+      summary: List tenant services
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tenant's active services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantService'
+    
+    post:
+      tags: [services]
+      summary: Activate service for tenant
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_code:
+                  type: string
+                config:
+                  type: object
+      responses:
+        '201':
+          description: Service activated
+
+  /services/{tenantRut}/{serviceCode}/health:
+    get:
+      tags: [services]
+      summary: Check service health
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: serviceCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceHealth'
+
+  # ==========================================
+  # TEMPLATES (SmarterBOT.store)
+  # ==========================================
+  /templates:
+    get:
+      tags: [templates]
+      summary: List available templates
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Template'
+
+  /templates/install:
+    post:
+      tags: [templates]
+      summary: Install template for tenant
+      description: |
+        Called by SmarterBOT.store when user purchases/activates template.
+        
+        **Actions:**
+        1. Write to `templates_installed`
+        2. Activate required services in `tenant_services`
+        3. Create Vault keys via Vault MCP if needed
+        4. Import n8n workflows if applicable
+        5. Update MCP Hub permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenant_rut
+                - template_code
+              properties:
+                tenant_rut:
+                  type: string
+                template_code:
+                  type: string
+                version:
+                  type: string
+                config:
+                  type: object
+      responses:
+        '201':
+          description: Template installed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  installation_id:
+                    type: integer
+                  services_activated:
+                    type: array
+                    items:
+                      type: string
+                  mcp_tools_granted:
+                    type: array
+                    items:
+                      type: string
+
+  /templates/{tenantRut}:
+    get:
+      tags: [templates]
+      summary: List tenant's installed templates
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Installed templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TemplateInstalled'
+
+  # ==========================================
+  # CHATWOOT
+  # ==========================================
+  /chatwoot/{tenantRut}/contacts:
+    get:
+      tags: [chatwoot]
+      summary: List Chatwoot contacts
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contact list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatwootContact'
+    
+    post:
+      tags: [chatwoot]
+      summary: Create Chatwoot contact
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatwootContactCreate'
+      responses:
+        '201':
+          description: Contact created
+
+  /chatwoot/{tenantRut}/events:
+    get:
+      tags: [chatwoot]
+      summary: List Chatwoot events
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: event_type
+          in: query
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Event list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatwootEvent'
+
+  # ==========================================
+  # ODOO
+  # ==========================================
+  /odoo/{tenantRut}/customers:
+    get:
+      tags: [odoo]
+      summary: List Odoo customers
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer list
+
+    post:
+      tags: [odoo]
+      summary: Create Odoo customer
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: Customer created
+
+  /odoo/{tenantRut}/invoices:
+    get:
+      tags: [odoo]
+      summary: List Odoo invoices
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice list
+
+  # ==========================================
+  # SHOPIFY
+  # ==========================================
+  /shopify/{tenantRut}/products:
+    get:
+      tags: [shopify]
+      summary: List Shopify products
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product list
+
+  /shopify/{tenantRut}/orders:
+    get:
+      tags: [shopify]
+      summary: List Shopify orders
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order list
+
+  /shopify/{tenantRut}/sync-to-odoo:
+    post:
+      tags: [shopify]
+      summary: Sync Shopify orders to Odoo
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Sync started
+
+  # ==========================================
+  # MERCADOLIBRE
+  # ==========================================
+  /ml/{tenantRut}/listings:
+    get:
+      tags: [ml]
+      summary: List MercadoLibre listings
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listing list
+
+  /ml/{tenantRut}/orders:
+    get:
+      tags: [ml]
+      summary: List MercadoLibre orders
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order list
+
+  # ==========================================
+  # HOSTINGER
+  # ==========================================
+  /hostinger/{tenantRut}/containers:
+    get:
+      tags: [hostinger]
+      summary: List containers
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Container list
+
+  /hostinger/{tenantRut}/containers/{containerId}/logs:
+    get:
+      tags: [hostinger]
+      summary: Get container logs
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Container logs
+
+  # ==========================================
+  # ANALYTICS
+  # ==========================================
+  /analytics/{tenantRut}/metrics:
+    get:
+      tags: [analytics]
+      summary: Get tenant metrics
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: metric_name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Metric data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantMetric'
+
+  # ==========================================
+  # HOOKS
+  # ==========================================
+  /hooks/chatwoot:
+    post:
+      tags: [hooks]
+      summary: Chatwoot webhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Event processed
+
+  /hooks/shopify:
+    post:
+      tags: [hooks]
+      summary: Shopify webhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Event processed
+
+  /hooks/mercadolibre:
+    post:
+      tags: [hooks]
+      summary: MercadoLibre webhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Event processed
+
+  # ==========================================
+  # MCP TOOLS
+  # ==========================================
+  /mcp/tools:
+    get:
+      tags: [mcp]
+      summary: List available MCP tools
+      description: Returns tools available for current tenant based on plan + services
+      responses:
+        '200':
+          description: Tool list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MCPTool'
+
+  /mcp/tools/{tenantRut}:
+    get:
+      tags: [mcp]
+      summary: List MCP tools for tenant
+      parameters:
+        - name: tenantRut
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tool list with permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MCPToolPermission'
+
+  /mcp/servers:
+    get:
+      tags: [mcp]
+      summary: List MCP servers
+      description: Internal registry of MCP servers (vault-mcp, smarteros-docs, etc)
+      responses:
+        '200':
+          description: Server list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MCPServer'
+
+# ==========================================
+# COMPONENTS
+# ==========================================
+components:
+  securitySchemes:
+    ClerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk JWT token
+
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        clerk_id:
+          type: string
+        email:
+          type: string
+        tenants:
+          type: array
+          items:
+            type: string
+
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: integer
+        rut:
+          type: string
+        business_name:
+          type: string
+        plan:
+          type: string
+          enum: [basic, pro, enterprise]
+        status:
+          type: string
+          enum: [active, suspended, trial]
+        created_at:
+          type: string
+          format: date-time
+
+    TenantCreate:
+      type: object
+      required:
+        - rut
+        - business_name
+      properties:
+        rut:
+          type: string
+        business_name:
+          type: string
+        plan:
+          type: string
+          enum: [basic, pro, enterprise]
+          default: basic
+
+    TenantUpdate:
+      type: object
+      properties:
+        business_name:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+
+    TenantKey:
+      type: object
+      properties:
+        id:
+          type: integer
+        key_name:
+          type: string
+        vault_path:
+          type: string
+        key_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Service:
+      type: object
+      properties:
+        service_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    TenantService:
+      type: object
+      properties:
+        service_code:
+          type: string
+        status:
+          type: string
+        health_status:
+          type: string
+        installed_at:
+          type: string
+          format: date-time
+
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, down]
+        last_check:
+          type: string
+          format: date-time
+        details:
+          type: object
+
+    Template:
+      type: object
+      properties:
+        template_code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        version:
+          type: string
+        price_clp:
+          type: integer
+        requires_services:
+          type: array
+          items:
+            type: string
+
+    TemplateInstalled:
+      type: object
+      properties:
+        template_code:
+          type: string
+        version:
+          type: string
+        installed_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+
+    ChatwootContact:
+      type: object
+      properties:
+        chatwoot_contact_id:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        name:
+          type: string
+
+    ChatwootContactCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    ChatwootEvent:
+      type: object
+      properties:
+        event_type:
+          type: string
+        conversation_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    TenantMetric:
+      type: object
+      properties:
+        metric_date:
+          type: string
+          format: date
+        metric_name:
+          type: string
+        metric_value:
+          type: number
+        service_code:
+          type: string
+
+    MCPServer:
+      type: object
+      properties:
+        server_code:
+          type: string
+        name:
+          type: string
+        internal_url:
+          type: string
+        status:
+          type: string
+
+    MCPTool:
+      type: object
+      properties:
+        tool_name:
+          type: string
+        server_code:
+          type: string
+        description:
+          type: string
+        requires_plan:
+          type: string
+        requires_services:
+          type: array
+          items:
+            type: string
+
+    MCPToolPermission:
+      type: object
+      properties:
+        tool_name:
+          type: string
+        enabled:
+          type: boolean
+        rate_limit_per_hour:
+          type: integer
