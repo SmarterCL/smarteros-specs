@@ -1,0 +1,90 @@
+# specs/mcp/ingestion.yaml
+# OpenSpec for MCP Ingestion System
+entity: ingestion
+description: "Ingestion system for SmarterOS platform"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique ingestion record identifier"
+  source:
+    type: string
+    required: true
+    enum: ["whatsapp", "email", "webhook", "api", "chatwoot", "n8n", "supabase"]
+    description: "Source of the data ingestion"
+  payload:
+    type: object
+    required: true
+    description: "Raw ingestion payload"
+  processed_payload:
+    type: object
+    required: false
+    description: "Processed payload after validation"
+  status:
+    type: string
+    required: true
+    default: "received"
+    enum: ["received", "validating", "processing", "completed", "failed"]
+    description: "Ingestion status"
+  error:
+    type: string
+    required: false
+    description: "Error message if ingestion failed"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Ingestion creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  processed_at:
+    type: timestamp
+    required: false
+    description: "Processing completion timestamp"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+events:
+  received:
+    description: "Triggered when ingestion is received"
+    payload:
+      - ingestion_id
+      - source
+      - tenant_id
+  validated:
+    description: "Triggered when ingestion validation completes"
+    payload:
+      - ingestion_id
+      - validation_result
+      - tenant_id
+  processed:
+    description: "Triggered when ingestion processing completes"
+    payload:
+      - ingestion_id
+      - result
+      - tenant_id
+  failed:
+    description: "Triggered when ingestion fails"
+    payload:
+      - ingestion_id
+      - error
+      - tenant_id
+validation:
+  rules:
+    - field: source
+      type: enum
+      values: ["whatsapp", "email", "webhook", "api", "chatwoot", "n8n", "supabase"]
+      required: true
+    - field: status
+      type: enum
+      values: ["received", "validating", "processing", "completed", "failed"]
+      required: true
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

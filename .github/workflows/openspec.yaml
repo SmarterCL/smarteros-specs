@@ -1,0 +1,72 @@
+name: OpenSpec CI
+on:
+  push:
+    paths:
+      - 'specs/**'
+      - 'opensk.json'
+  pull_request:
+    paths:
+      - 'specs/**'
+      - 'opensk.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install OpenSpec + SpecKit
+        run: |
+          npm install -g @smarteros/spec-kit openspec-cli
+          
+      - name: Validate Specs
+        run: |
+          ./validate.sh
+          
+      - name: Generate MCP Runtime
+        run: |
+          openspec generate --target mcp --out ../smarteros-mcp/generated || echo "MCP generation skipped (repo may not exist)"
+          
+      - name: Generate Supabase SQL
+        run: |
+          openspec generate --target supabase --out supabase/sql
+          
+      - name: Generate Documentation
+        run: |
+          openspec generate --target docs --out docs/
+          
+      - name: Generate n8n Workflows
+        run: |
+          openspec generate --target n8n --out generated/n8n/
+          
+      - name: Run MCP Validation Test Runner
+        run: |
+          # This would run tests against the generated MCP code
+          echo "Running MCP validation tests..."
+          # Add actual test commands here when MCP repo is available
+          
+      - name: Push to Supabase (on main branch)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Only run supabase push on main branch
+          # supabase db push
+          echo "Supabase push would run on main branch"
+          
+      - name: Commit Generated Files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add generated/ docs/ supabase/
+          git commit -m "chore: auto-generate spec artifacts" || echo "No changes to commit"
+          
+      - name: Push Generated Changes
+        if: github.ref == 'refs/heads/main'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}

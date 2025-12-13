@@ -1,0 +1,127 @@
+# specs/mcp/agent.v2.yaml
+# OpenSpec v2 for MCP Agent with multimodal support
+entity: multimodal_agent
+description: "Multimodal MCP Agent for SmarterOS platform with GLM-4.6V integration"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique agent identifier"
+  name:
+    type: string
+    required: true
+    description: "Agent name"
+  type:
+    type: string
+    required: true
+    enum: ["ingestion", "validation", "workflow", "scout", "chatwoot", "n8n", "ai_analyzer"]
+    description: "Agent type"
+  ai_model:
+    type: string
+    required: false
+    default: "glm-4.6v"
+    description: "AI model to use for processing (for AI-enabled agents)"
+  capabilities:
+    type: array
+    items:
+      type: string
+    required: false
+    description: "List of capabilities this agent supports"
+  config:
+    type: object
+    required: true
+    description: "Agent configuration parameters"
+  enabled:
+    type: boolean
+    required: true
+    default: true
+    description: "Whether the agent is enabled"
+  ai_enabled:
+    type: boolean
+    required: true
+    default: false
+    description: "Whether this agent uses AI capabilities"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Agent creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+ingestion:
+  multimodal:
+    enabled: true
+    supported_types: ["image", "document", "url", "audio", "video", "text"]
+    ai_processors:
+      - type: "image"
+        action: "visual_analysis"
+        ai_model: "glm-4.6v"
+      - type: "document"
+        action: "content_analysis"
+        ai_model: "glm-4.6v"
+      - type: "url"
+        action: "metadata_extraction"
+        ai_model: "glm-4.6v"
+      - type: "audio"
+        action: "speech_to_text"
+        ai_model: "glm-4.6v"
+      - type: "video"
+        action: "content_identification"
+        ai_model: "glm-4.6v"
+events:
+  started:
+    description: "Triggered when agent starts"
+    payload:
+      - agent_id
+      - config
+      - tenant_id
+  ai_processing:
+    description: "Triggered when agent starts AI processing"
+    payload:
+      - agent_id
+      - ai_model
+      - input_data
+      - tenant_id
+  ai_completed:
+    description: "Triggered when agent completes AI processing"
+    payload:
+      - agent_id
+      - ai_result
+      - confidence_level
+      - tenant_id
+  stopped:
+    description: "Triggered when agent stops"
+    payload:
+      - agent_id
+      - tenant_id
+  heartbeat:
+    description: "Triggered periodically by agent"
+    payload:
+      - agent_id
+      - status
+      - tenant_id
+validation:
+  rules:
+    - field: type
+      type: enum
+      values: ["ingestion", "validation", "workflow", "scout", "chatwoot", "n8n", "ai_analyzer"]
+      required: true
+    - field: config
+      type: object
+      required: true
+    - field: capabilities
+      type: string_array
+      required: false
+      validItems: ["text_processing", "image_analysis", "document_scanning", "voice_processing", "video_analysis", "ai_inference"]
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

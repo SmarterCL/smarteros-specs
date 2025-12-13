@@ -1,0 +1,73 @@
+# specs/smarteros/events.yaml
+# OpenSpec for System Events
+entity: system_event
+description: "System event tracking for SmarterOS platform"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique event identifier"
+  event_type:
+    type: string
+    required: true
+    description: "Type of event (e.g. customer.created, order.status_changed)"
+  source:
+    type: string
+    required: true
+    description: "Source of the event (e.g. api, cron, webhook)"
+  payload:
+    type: object
+    required: true
+    description: "Event payload data"
+  timestamp:
+    type: timestamp
+    required: true
+    description: "Event timestamp"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+  processed:
+    type: boolean
+    required: true
+    default: false
+    description: "Whether the event has been processed"
+  retries:
+    type: number
+    required: true
+    default: 0
+    description: "Number of processing retries"
+events:
+  logged:
+    description: "Triggered when an event is logged"
+    payload:
+      - event_id
+      - event_type
+      - tenant_id
+  processed:
+    description: "Triggered when an event is processed"
+    payload:
+      - event_id
+      - result
+      - tenant_id
+  failed:
+    description: "Triggered when an event processing fails"
+    payload:
+      - event_id
+      - error
+      - tenant_id
+validation:
+  rules:
+    - field: event_type
+      type: string
+      required: true
+    - field: timestamp
+      type: timestamp
+      required: true
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

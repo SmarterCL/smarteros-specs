@@ -1,141 +1,103 @@
-# SmarterOS Specs
+# SmarterOS OpenSpec v2 - Multimodal Specifications
 
-Especificaciones técnicas, arquitectura y esquemas de datos para la plataforma SmarterOS.
+OpenSpec v2 contracts for the SmarterOS platform with multimodal AI capabilities and GLM-4.6V integration. This repository contains the source of truth for all entities, endpoints, events, validations, and AI-powered ingestion in the system.
 
-## 📋 Contenido
+## 🎯 New in v2: Multimodal Support
 
-### OpenSpec
-Especificaciones formales del sistema:
-- **runtime.validation.v1** - Validación continua de integridad funcional y semántica
-- **api-mcp.yaml** - API MCP con rate limiting y autenticación
-- **auth-api.yaml** - Sistema de autenticación y autorización
+OpenSpec v2 introduces full multimodal capabilities:
 
-### Supabase Schemas
-Esquemas de base de datos multi-tenant:
-- **runtime-validation** - Sistema de scouts y validación continua
-- **mcp-memory** - Memoria persistente con pgvector
-- **auth-system** - Autenticación y gestión de usuarios
+- **Images, Documents, Audio, Video** ingestion and processing
+- **GLM-4.6V AI integration** for content analysis
+- **Auto-extraction** of text, metadata, and insights
+- **Multimodal validation** and processing
+- **AI-powered scouts** for intelligent data discovery
 
-### MCP (Model Context Protocol)
-Configuraciones de agentes y servicios MCP:
-- **cloudflare-mcp-server** - Gestión de DNS y certificados
-- **github-mcp-server** - Integración con GitHub
-- **smarteros-mcp** - Protocolo central de SmarterOS
-
-## 🏗️ Arquitectura
+## 📁 Structure
 
 ```
-smarteros-specs/
-├── openspec/
-│   ├── specs/              # Especificaciones YAML
-│   │   ├── runtime.validation.v1.yaml
-│   │   ├── api-mcp.yaml
-│   │   └── auth-api.yaml
-│   └── supabase-*.sql      # Schemas SQL
-├── mcp/                    # Configuraciones MCP
-├── specs/                  # Specs adicionales
-└── supabase/              # Migraciones Supabase
+specs/
+├── smarteros/        # Core business entities with multimodal support
+│   ├── customers.v2.yaml      # Customer with avatar/documents
+│   ├── orders.v2.yaml         # Orders with attachments/images
+│   ├── rut.yaml
+│   └── events.yaml
+├── mcp/              # MCP entities with multimodal capabilities
+│   ├── agent.v2.yaml          # AI-analyzer agents
+│   ├── ingestion.v2.yaml      # Multimodal ingestion
+│   ├── runtime.yaml
+│   └── scout.v2.yaml          # AI-powered scouts
+└── tenant/           # Multi-tenant isolation
+    └── tenant.yaml
 ```
 
-## 🚀 Uso
+## 🚀 Multimodal Features
 
-### Validar Specs
-```bash
-npm install -g @fission-ai/openspec
-openspec check openspec/specs/*.yaml
+### Supported Content Types
+- **Text**: Traditional text processing
+- **Image**: JPG, PNG, WEBP, GIF with visual analysis
+- **Document**: PDF, DOC, DOCX, XLS with text extraction
+- **URL**: Web content scraping and analysis  
+- **Audio**: MP3, WAV with speech-to-text
+- **Video**: MP4, MOV with content analysis
+- **File**: ZIP, RAR with virus scanning
+
+### AI Integration (GLM-4.6V)
+- **Visual Analysis**: Object detection, content classification
+- **Document Analysis**: Text extraction, structured data
+- **Content Summarization**: Automatic content summarization
+- **Sentiment Analysis**: Text and audio sentiment
+- **Intent Classification**: Understanding user intent
+- **Confidence Scoring**: AI confidence levels 0.0-1.0
+
+## 🏗️ Specification Format v2
+
+Each v2 spec file includes the new `ingestion` section for multimodal support:
+
+```yaml
+entity: entity_name
+description: "Entity description"
+tenant_isolated: true
+fields:
+  field_name:
+    type: string/image/document/url/audio/video/file
+    required: true/false
+    unique: true/false
+    description: "Field description"
+ingestion:
+  multimodal:
+    enabled: true
+    supported_types: ["image", "document", "url", "audio", "video", "file"]
+    ai_processors:
+      - type: "image"
+        action: "visual_analysis"
+        ai_model: "glm-4.6v"
+events:
+  event_name:
+    description: "Event description"
+    payload:
+      - field1
+      - field2
+validation:
+  rules:
+    - field: field_name
+      type: validation_type
+      required: true
 ```
 
-### Aplicar Schema a Supabase
-```bash
-psql $SUPABASE_DB_URL -f openspec/supabase-schema-runtime-validation.sql
-```
+## 🤝 Contributing
 
-### Generar Docs
-```bash
-openspec docs openspec/specs/runtime.validation.v1.yaml > docs/runtime-validation.md
-```
+When adding new multimodal entities or modifying existing ones:
+1. Update the appropriate v2 spec file with multimodal support
+2. Include ingestion configuration for AI processing
+3. Run validation: `./validate.sh`
+4. Generate new code: `openspec generate --target mcp --out ../smarteros-mcp/generated`
+5. Update documentation if needed
 
-## 📚 Especificaciones Principales
+## 🌐 Marketplace Ready
 
-### Runtime Validation (v1.0)
-Sistema de validación continua para sitios productivos:
-- ✅ Validación de links críticos
-- ✅ Detección de nuevas URLs
-- ✅ Comparación semántica con IA
-- ✅ Alertas automáticas
-- ✅ Multi-tenant con RLS
-- ✅ SLA compliance
-
-**Stack**: Firecrawl + OpenRouter + Supabase + Mailgun
-
-**Casos de uso**:
-- Ecommerce: Monitoreo de checkout y pasarelas
-- Afiliados: Tracking de funnels y ofertas
-- SaaS: Validación de signup flow
-
-### API MCP (v2.0)
-API central con gobernanza:
-- ✅ Rate limiting por tenant (300 RPM)
-- ✅ Autenticación JWT
-- ✅ Integración con Qwen (Alibaba Cloud)
-- ✅ Endpoints MCP estándar
-- ✅ Validación contractual automática
-
-### Auth System
-Sistema de autenticación multi-tenant:
-- ✅ JWT con refresh tokens
-- ✅ RLS por tenant
-- ✅ Integración con Clerk
-- ✅ Soporte WhatsApp OTP
-
-## 🔧 Stack Técnico
-
-- **OpenSpec**: Validación de contratos
-- **Supabase**: PostgreSQL + pgvector + RLS
-- **OpenRouter**: LLM unificado (Qwen, GPT, Claude)
-- **Mailgun**: Alertas y notificaciones
-- **Firecrawl**: Web scraping
-- **n8n**: Workflow automation
-- **MCP**: Model Context Protocol
-
-## 📊 Estado Actual
-
-```
-✅ Runtime Validation v1.0 - ACTIVE
-✅ API MCP v2.0 - ACTIVE  
-✅ MCP Memory - ACTIVE
-✅ Auth System - ACTIVE
-⏳ Embeddings Search - IN PROGRESS
-```
-
-## 🎯 Próximos Specs
-
-- [ ] Payment Gateway Validation
-- [ ] SII Compliance Checker
-- [ ] Webhook Security Spec
-- [ ] Multi-region Deployment
-
-## 📝 Contribuir
-
-1. Fork el repositorio
-2. Crear rama: `git checkout -b feature/nueva-spec`
-3. Validar: `openspec check openspec/specs/*.yaml`
-4. Commit: `git commit -m "feat: nueva spec"`
-5. Push: `git push origin feature/nueva-spec`
-6. Crear Pull Request
-
-## 📖 Documentación
-
-- [OpenSpec Runtime Validation](/root/OPENSPEC-RUNTIME-VALIDATION-COMPLETE.md)
-- [API MCP Documentation](https://api.smarterbot.cl/docs)
-- [Supabase Schemas](/openspec/)
-
-## 🔗 Enlaces
-
-- **GitHub**: https://github.com/SmarterCL/smarteros-specs
-- **API Docs**: https://api.smarterbot.cl/docs
-- **Main Repo**: https://github.com/SmarterCL/smarteros-os
-
----
-
-**SmarterOS** - Sistema operativo para PyMEs con IA, contabilidad y pagos para Chile
+This multimodal architecture enables SmarterBOT.store to offer:
+- **AI-powered automation** bundles
+- **Visual content processing** workflows
+- **Document analysis** tools
+- **Auto-generated insights** modules
+- **Real-time AI** capabilities

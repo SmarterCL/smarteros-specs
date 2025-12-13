@@ -1,0 +1,95 @@
+# specs/mcp/runtime.yaml
+# OpenSpec for MCP Runtime System
+entity: runtime
+description: "Runtime execution system for SmarterOS platform"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique runtime execution identifier"
+  execution_type:
+    type: string
+    required: true
+    enum: ["agent", "workflow", "validation", "scout", "ingestion"]
+    description: "Type of runtime execution"
+  spec_ref:
+    type: string
+    required: true
+    description: "Reference to the spec being executed"
+  input:
+    type: object
+    required: true
+    description: "Input parameters for execution"
+  output:
+    type: object
+    required: false
+    description: "Output result of execution"
+  status:
+    type: string
+    required: true
+    default: "pending"
+    enum: ["pending", "running", "completed", "failed", "cancelled"]
+    description: "Execution status"
+  error:
+    type: string
+    required: false
+    description: "Error message if execution failed"
+  started_at:
+    type: timestamp
+    required: true
+    description: "Execution start timestamp"
+  completed_at:
+    type: timestamp
+    required: false
+    description: "Execution completion timestamp"
+  duration_ms:
+    type: number
+    required: false
+    description: "Execution duration in milliseconds"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+events:
+  started:
+    description: "Triggered when execution starts"
+    payload:
+      - runtime_id
+      - execution_type
+      - tenant_id
+  completed:
+    description: "Triggered when execution completes"
+    payload:
+      - runtime_id
+      - result
+      - duration_ms
+      - tenant_id
+  failed:
+    description: "Triggered when execution fails"
+    payload:
+      - runtime_id
+      - error
+      - tenant_id
+  cancelled:
+    description: "Triggered when execution is cancelled"
+    payload:
+      - runtime_id
+      - reason
+      - tenant_id
+validation:
+  rules:
+    - field: execution_type
+      type: enum
+      values: ["agent", "workflow", "validation", "scout", "ingestion"]
+      required: true
+    - field: status
+      type: enum
+      values: ["pending", "running", "completed", "failed", "cancelled"]
+      required: true
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

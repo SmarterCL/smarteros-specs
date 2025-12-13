@@ -1,0 +1,73 @@
+# specs/mcp/agent.yaml
+# OpenSpec for MCP Agent
+entity: agent
+description: "MCP Agent for SmarterOS platform"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique agent identifier"
+  name:
+    type: string
+    required: true
+    description: "Agent name"
+  type:
+    type: string
+    required: true
+    enum: ["ingestion", "validation", "workflow", "scout", "chatwoot", "n8n"]
+    description: "Agent type"
+  config:
+    type: object
+    required: true
+    description: "Agent configuration parameters"
+  enabled:
+    type: boolean
+    required: true
+    default: true
+    description: "Whether the agent is enabled"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Agent creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+events:
+  started:
+    description: "Triggered when agent starts"
+    payload:
+      - agent_id
+      - config
+      - tenant_id
+  stopped:
+    description: "Triggered when agent stops"
+    payload:
+      - agent_id
+      - tenant_id
+  heartbeat:
+    description: "Triggered periodically by agent"
+    payload:
+      - agent_id
+      - status
+      - tenant_id
+validation:
+  rules:
+    - field: type
+      type: enum
+      values: ["ingestion", "validation", "workflow", "scout", "chatwoot", "n8n"]
+      required: true
+    - field: config
+      type: object
+      required: true
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

@@ -1,0 +1,159 @@
+# specs/mcp/ingestion.v2.yaml
+# OpenSpec v2 for MCP Ingestion System with multimodal support
+entity: multimodal_ingestion
+description: "Multimodal ingestion system for SmarterOS platform with GLM-4.6V compatibility"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique ingestion record identifier"
+  source:
+    type: string
+    required: true
+    enum: ["whatsapp", "email", "webhook", "api", "chatwoot", "n8n", "supabase", "upload"]
+    description: "Source of the data ingestion"
+  content_type:
+    type: string
+    required: true
+    enum: ["text", "image", "document", "url", "audio", "video", "file"]
+    description: "Type of content being ingested"
+  payload:
+    type: object
+    required: true
+    description: "Raw ingestion payload"
+  processed_payload:
+    type: object
+    required: false
+    description: "Processed payload after validation and AI analysis"
+  ai_analysis:
+    type: object
+    required: false
+    description: "AI-generated analysis and tags from GLM-4.6V"
+  ai_confidence:
+    type: number
+    required: false
+    description: "AI confidence level for analysis (0.0 to 1.0)"
+  extracted_text:
+    type: string
+    required: false
+    description: "Text extracted from multimodal content"
+  metadata:
+    type: object
+    required: false
+    description: "Extracted metadata from the content"
+  status:
+    type: string
+    required: true
+    default: "received"
+    enum: ["received", "validating", "ai_processing", "ai_analyzing", "processing", "completed", "failed"]
+    description: "Ingestion status"
+  error:
+    type: string
+    required: false
+    description: "Error message if ingestion failed"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Ingestion creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  processed_at:
+    type: timestamp
+    required: false
+    description: "Processing completion timestamp"
+  ai_processed_at:
+    type: timestamp
+    required: false
+    description: "AI processing completion timestamp"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+ingestion:
+  multimodal:
+    enabled: true
+    supported_types: ["image", "document", "url", "audio", "video", "file"]
+    ai_processors:
+      - type: "image"
+        action: "visual_analysis"
+        ai_model: "glm-4.6v"
+      - type: "document"
+        action: "text_extraction_and_analysis"
+        ai_model: "glm-4.6v"
+      - type: "url"
+        action: "content_scraping_and_analysis"
+        ai_model: "glm-4.6v"
+      - type: "audio"
+        action: "transcription_and_analysis"
+        ai_model: "glm-4.6v"
+      - type: "video"
+        action: "content_analysis"
+        ai_model: "glm-4.6v"
+events:
+  received:
+    description: "Triggered when ingestion is received"
+    payload:
+      - ingestion_id
+      - source
+      - content_type
+      - tenant_id
+  ai_processing:
+    description: "Triggered when AI processing begins"
+    payload:
+      - ingestion_id
+      - ai_model
+      - content_type
+      - tenant_id
+  ai_analyzed:
+    description: "Triggered when AI analysis completes"
+    payload:
+      - ingestion_id
+      - analysis_result
+      - confidence_level
+      - tenant_id
+  validated:
+    description: "Triggered when ingestion validation completes"
+    payload:
+      - ingestion_id
+      - validation_result
+      - tenant_id
+  processed:
+    description: "Triggered when ingestion processing completes"
+    payload:
+      - ingestion_id
+      - result
+      - tenant_id
+  failed:
+    description: "Triggered when ingestion fails"
+    payload:
+      - ingestion_id
+      - error
+      - tenant_id
+validation:
+  rules:
+    - field: source
+      type: enum
+      values: ["whatsapp", "email", "webhook", "api", "chatwoot", "n8n", "supabase", "upload"]
+      required: true
+    - field: content_type
+      type: enum
+      values: ["text", "image", "document", "url", "audio", "video", "file"]
+      required: true
+    - field: status
+      type: enum
+      values: ["received", "validating", "ai_processing", "ai_analyzing", "processing", "completed", "failed"]
+      required: true
+    - field: ai_confidence
+      type: number
+      min: 0.0
+      max: 1.0
+      required: false
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

@@ -1,0 +1,75 @@
+{
+  "name": "smarteros-specs",
+  "version": "2.0.0",
+  "description": "OpenSpec specifications for SmarterOS platform with multimodal support",
+  "generator": {
+    "specKit": "0.7.0",
+    "targets": [
+      "mcp",
+      "supabase",
+      "docs",
+      "n8n",
+      "chatwoot",
+      "agents",
+      "scouts"
+    ]
+  },
+  "specsDir": "./specs",
+  "output": {
+    "mcp": "../smarteros-mcp/generated",
+    "supabase": "./supabase/sql",
+    "docs": "./docs",
+    "n8n": "./generated/n8n",
+    "chatwoot": "./generated/chatwoot",
+    "agents": "./generated/agents",
+    "scouts": "./generated/scouts"
+  },
+  "validation": {
+    "requiredFields": ["entity", "fields", "events", "ingestion"],
+    "supportedTypes": [
+      "string", 
+      "number", 
+      "boolean", 
+      "object", 
+      "array", 
+      "timestamp",
+      "image",
+      "url",
+      "asset",
+      "document",
+      "audio",
+      "video",
+      "file"
+    ],
+    "supportedMultimodalTypes": [
+      "image",
+      "url", 
+      "asset",
+      "document",
+      "audio",
+      "video",
+      "file"
+    ]
+  },
+  "multimodal": {
+    "supportedFormats": {
+      "image": ["jpg", "jpeg", "png", "webp", "gif"],
+      "document": ["pdf", "doc", "docx", "xls", "xlsx", "txt", "csv"],
+      "audio": ["mp3", "wav", "m4a", "aac"],
+      "video": ["mp4", "mov", "avi", "mkv"],
+      "file": ["zip", "rar", "tar", "gz"]
+    },
+    "maxSize": {
+      "image": "10MB",
+      "document": "50MB", 
+      "audio": "50MB",
+      "video": "200MB"
+    },
+    "ingestion": {
+      "autoExtractText": true,
+      "autoTag": true,
+      "aiValidate": true,
+      "extractMetadata": true
+    }
+  }
+}
