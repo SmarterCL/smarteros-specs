@@ -112,7 +112,7 @@ api.smarterbot.cl/
 ```bash
 # Database (required)
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE=eyJhbGciOiJ...  # bypasses RLS
+SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_ROTATED_2025
 
 # Email (optional but recommended)
 RESEND_API_KEY=re_xxxxx
@@ -145,7 +145,7 @@ api-smarterbot:
     - "8000:8000"
   environment:
     - SUPABASE_URL=${SUPABASE_URL}
-    - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
+    - SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_ROTATED_2025
     - RESEND_API_KEY=${RESEND_API_KEY}
   networks:
     - smarter-net

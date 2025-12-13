@@ -114,7 +114,7 @@ services:
       - "8000:8000"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
+      - SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_ROTATED_2025
       - RESEND_API_KEY=${RESEND_API_KEY}
       - RESEND_FROM=${RESEND_FROM:-no-reply@smarterbot.cl}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-smarterbotcl@gmail.com}

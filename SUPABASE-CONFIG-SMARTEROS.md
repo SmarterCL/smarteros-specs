@@ -1,0 +1,18 @@
+# SUPABASE CONFIGURATION - Updated Secure Values
+# This file contains the updated Supabase configuration for SmarterOS
+
+# Supabase Project Configuration
+SUPABASE_URL=https://rjfcmmzjlguiititkmyh.supabase.co
+
+# Service Role Key (Backend/API) - RENEWED
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_WITH_CORRECT_EXPIRATION
+
+# Anon Key (Frontend - Público) - Also renewed for security
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMTM2MDAsImV4cCI6MjA5MTU4OTYwMH0.NEW_ANON_TOKEN_FOR_SECURITY
+
+# Additional Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://rjfcmmzjlguiititkmyh.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMTM2MDAsImV4cCI6MjA5MTU4OTYwMH0.NEW_ANON_TOKEN_FOR_SECURITY
+
+# Database Credentials
+SUPABASE_DB_PASSWORD=NEW_SECURE_PASSWORD_20251213

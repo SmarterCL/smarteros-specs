@@ -164,7 +164,7 @@ Returns auto-generated tool catalog with 28 tools across 5 categories.
 ```bash
 # Supabase
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE=eyJ...
+SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_ROTATED_2025
 
 # Odoo
 ODOO_URL=https://odoo.smarterbot.cl

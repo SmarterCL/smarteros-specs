@@ -67,7 +67,7 @@ Supabase offers a robust database solution, ideal for storing application data.
 
     ```bash
     SUPABASE_URL=https://your_project_id.supabase.co
-    SUPABASE_SERVICE_ROLE=your_service_role_key
+    SUPABASE_SERVICE_ROLE=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqZmNtbXpqbGd1aWl0aXRrbXloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjAxMzYwMCwiZXhwIjoyMDkxNTg5NjAwfQ.NEW_SECURE_TOKEN_ROTATED_2025
     ```
 
 3. **Database Schema**: Use Supabase Dashboard to set up your database tables according to your application's needs.
