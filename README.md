@@ -16,6 +16,10 @@ OpenSpec v2 introduces full multimodal capabilities:
 
 ```
 specs/
+├── ach/              # ACHS integration specifications
+│   └── validate.yaml          # ACHS validation and certification
+├── suseso/           # SUSESO integration specifications
+│   └── reportar_suceso.yaml   # Labor incident reporting
 ├── smarteros/        # Core business entities with multimodal support
 │   ├── customers.v2.yaml      # Customer with avatar/documents
 │   ├── orders.v2.yaml         # Orders with attachments/images
@@ -28,6 +32,19 @@ specs/
 │   └── scout.v2.yaml          # AI-powered scouts
 └── tenant/           # Multi-tenant isolation
     └── tenant.yaml
+
+skills/
+├── voz/              # Vocal health prevention skills
+│   ├── evaluar_riesgo_vocal.yaml  # Vocal risk assessment
+│   └── monitoreo_preventivo.yaml # Preventive monitoring
+└── index.json         # Skills catalog and integration points
+
+docs/
+├── V3-STABLE-DEFINITION.md       # v3 Design Freeze definition
+├── BLUEPRINT-EJECUCION-V3.md      # Executable contract blueprint
+├── SMARTEROS-VOZ-INTEGRATION.md   # Complete integration guide
+├── IMPLEMENTATION-SUMMARY.md      # Implementation overview
+└── COMPLETION-REPORT.md           # Completion report
 ```
 
 ## 🚀 Multimodal Features
@@ -93,6 +110,23 @@ When adding new multimodal entities or modifying existing ones:
 4. Generate new code: `openspec generate --target mcp --out ../smarteros-mcp/generated`
 5. Update documentation if needed
 
+### Adding New Skills
+
+To add executable skills:
+1. Create skill specification in `skills/[category]/[skill].yaml`
+2. Follow OpenSpec skill format
+3. Add to `skills/index.json`
+4. Implement in MCP runtime
+5. Update integration documentation
+
+### Institutional Integrations
+
+For ACHS/SUSESO integrations:
+1. Create spec in `specs/[institution]/[function].yaml`
+2. Define API contracts and events
+3. Implement security and compliance rules
+4. Add to integration blueprint
+
 ## 🌐 Marketplace Ready
 
 This multimodal architecture enables SmarterBOT.store to offer:
@@ -101,3 +135,12 @@ This multimodal architecture enables SmarterBOT.store to offer:
 - **Document analysis** tools
 - **Auto-generated insights** modules
 - **Real-time AI** capabilities
+
+### Institutional Capabilities
+
+SmarterOS v3 now provides:
+- **ACHS integration** for occupational health
+- **SUSESO reporting** for labor incidents
+- **Vocal health prevention** skills
+- **Contractual blueprints** for formal agreements
+- **Audit-ready operations** with full traceability
