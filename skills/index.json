@@ -2,144 +2,293 @@
   "version": "1.0",
   "skills": [
     {
-      "id": "evaluar_riesgo_vocal",
-      "name": "Evaluar Riesgo Vocal",
-      "description": "Vocal risk assessment based on VTD Scale and exposure characterization",
-      "category": "health_prevention",
+      "id": "rut.validate",
+      "name": "Validar RUT",
+      "description": "Valida formato de RUT chileno según normas SII",
+      "category": "core",
       "version": "1.0",
       "status": "stable",
       "endpoint": "/mcp/execute",
-      "spec": "skills/voz/evaluar_riesgo_vocal.yaml",
-      "permissions": ["authenticated"],
-      "input_example": {
-        "datos_usuario": {
-          "rut": "12.345.678-9",
-          "edad": 45,
-          "genero": "masculino",
-          "profesion": "profesor",
-          "anos_ejercicio": 20
+      "method": "POST",
+      "permissions": ["public"],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "rut": {
+            "type": "string",
+            "description": "RUT en formato 12345678-9 o 12.345.678-9",
+            "example": "12.345.678-9"
+          }
         },
-        "exposicion_vocal": {
-          "horas_uso_diario": 6,
-          "intensidad": "alta",
-          "entorno": "ruidoso",
-          "uso_equipos": false,
-          "sintomas": ["fatiga", "ronquera"]
+        "required": ["rut"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Indica si el RUT es válido"
+          },
+          "rut": {
+            "type": "string",
+            "description": "RUT normalizado"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": ["person", "company"],
+            "description": "Tipo de entidad"
+          },
+          "verification_digit": {
+            "type": "string",
+            "description": "Dígito verificador"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje de validación"
+          }
         }
       },
-      "output_example": {
-        "score_riesgo": 78,
-        "categoria": "alto",
-        "recomendaciones": [
-          "Realizar pausas cada 45 minutos",
-          "Usar equipo de amplificación"
-        ]
-      }
+      "example": {
+        "request": {
+          "skill": "rut.validate",
+          "input": {
+            "rut": "12.345.678-9"
+          }
+        },
+        "response": {
+          "valid": true,
+          "rut": "12345678-9",
+          "entity_type": "person",
+          "verification_digit": "9",
+          "message": "RUT válido"
+        }
+      },
+      "events": [
+        "rut.validated"
+      ]
     },
     {
-      "id": "monitoreo_preventivo",
-      "name": "Monitoreo Preventivo",
-      "description": "Preventive vocal monitoring with trend analysis and alerts",
-      "category": "health_monitoring",
+      "id": "tenant.create",
+      "name": "Crear Tenant",
+      "description": "Crea un nuevo tenant con aislamiento multi-tenant",
+      "category": "core",
       "version": "1.0",
       "status": "stable",
       "endpoint": "/mcp/execute",
-      "spec": "skills/voz/monitoreo_preventivo.yaml",
+      "method": "POST",
       "permissions": ["authenticated"],
-      "input_example": {
-        "rut": "12.345.678-9",
-        "historico": [
-          {
-            "fecha": "2025-11-01",
-            "score_riesgo": 65,
-            "horas_uso": 6
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nombre del tenant"
+          },
+          "rut": {
+            "type": "string",
+            "description": "RUT de la empresa"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email de contacto"
+          },
+          "plan": {
+            "type": "string",
+            "enum": ["demo", "basic", "pro", "enterprise"],
+            "default": "demo",
+            "description": "Plan de suscripción"
           }
-        ],
-        "frecuencia_uso": {
-          "horas_semanales": 35,
-          "intensidad_promedio": "alta"
+        },
+        "required": ["name", "rut"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "description": "ID del tenant creado"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del tenant"
+          },
+          "rut": {
+            "type": "string",
+            "description": "RUT normalizado"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "demo"],
+            "description": "Estado del tenant"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de creación"
+          }
         }
       },
-      "output_example": {
-        "alertas": [
-          {
-            "nivel": "critica",
-            "mensaje": "Riesgo vocal en aumento"
+      "example": {
+        "request": {
+          "skill": "tenant.create",
+          "input": {
+            "name": "Empresa Ejemplo",
+            "rut": "76.543.210-1",
+            "email": "contacto@empresa.cl",
+            "plan": "basic"
           }
-        ],
-        "tendencia": {
-          "direccion": "empeorando",
-          "variacion": 10.7
+        },
+        "response": {
+          "tenant_id": "tenant_abc123",
+          "name": "Empresa Ejemplo",
+          "rut": "76543210-1",
+          "status": "active",
+          "created_at": "2025-12-25T12:00:00Z"
         }
-      }
+      },
+      "events": [
+        "tenant.created",
+        "tenant.activated"
+      ]
     },
     {
-      "id": "dashboard_preventivo",
-      "name": "Dashboard Preventivo",
-      "description": "Institutional preventive dashboard with aggregated data",
-      "category": "institutional_reporting",
+      "id": "demo.odoo",
+      "name": "Levantar Demo Odoo",
+      "description": "Crea una instancia demo de Odoo para tenant",
+      "category": "demo",
       "version": "1.0",
-      "status": "planned",
+      "status": "stable",
       "endpoint": "/mcp/execute",
-      "spec": "skills/voz/dashboard_preventivo.yaml",
-      "permissions": ["health_professional", "admin"],
-      "input_example": {
-        "institucion_id": "inst_123",
-        "periodo": "2025-Q4",
-        "filtros": {
-          "profesion": "profesor",
-          "riesgo_minimo": "moderado"
+      "method": "POST",
+      "permissions": ["authenticated"],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "description": "ID del tenant"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Módulos a instalar",
+            "default": ["sale", "purchase", "account"]
+          },
+          "expiry_days": {
+            "type": "number",
+            "description": "Días de validez de la demo",
+            "default": 30
+          }
+        },
+        "required": ["tenant_id"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "demo_id": {
+            "type": "string",
+            "description": "ID de la instancia demo"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL de acceso"
+          },
+          "username": {
+            "type": "string",
+            "description": "Usuario administrador"
+          },
+          "password": {
+            "type": "string",
+            "description": "Contraseña temporal"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de expiración"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Módulos instalados"
+          }
         }
       },
-      "output_example": {
-        "agregados": {
-          "total_evaluaciones": 120,
-          "promedio_riesgo": 58.2
+      "example": {
+        "request": {
+          "skill": "demo.odoo",
+          "input": {
+            "tenant_id": "tenant_abc123",
+            "modules": ["sale", "purchase"],
+            "expiry_days": 15
+          }
         },
-        "tendencias": {
-          "direccion": "estable",
-          "variacion": 2.3
+        "response": {
+          "demo_id": "demo_xyz789",
+          "url": "https://demo-abc123.smarteros.cl",
+          "username": "admin",
+          "password": "temp-pass-123",
+          "expires_at": "2026-01-10T12:00:00Z",
+          "modules": ["sale", "purchase"]
         }
-      }
+      },
+      "events": [
+        "demo.created",
+        "demo.expires_soon"
+      ]
     }
   ],
   "categories": [
     {
-      "id": "health_prevention",
-      "name": "Prevención en Salud",
-      "description": "Skills focused on health risk prevention and assessment"
+      "id": "core",
+      "name": "Core",
+      "description": "Skills fundamentales del sistema"
     },
     {
-      "id": "health_monitoring",
-      "name": "Monitoreo de Salud",
-      "description": "Skills for continuous health monitoring and trend analysis"
+      "id": "demo",
+      "name": "Demo",
+      "description": "Skills para demostraciones y pruebas"
     },
     {
-      "id": "institutional_reporting",
-      "name": "Reportes Institucionales",
-      "description": "Skills for institutional reporting and compliance"
+      "id": "health",
+      "name": "Salud",
+      "description": "Skills de prevención y salud"
     }
   ],
-  "integration_points": [
-    {
-      "system": "ACHS",
-      "description": "Asociación Chilena de Seguridad prevention programs",
-      "skills": ["evaluar_riesgo_vocal", "monitoreo_preventivo"]
+  "endpoint": "/mcp/execute",
+  "methods": ["POST"],
+  "authentication": {
+    "required": true,
+    "schemes": ["bearer", "api_key"],
+    "public_skills": ["rut.validate"]
+  },
+  "response": {
+    "success": {
+      "status": 200,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "success": {"type": "boolean"},
+          "data": {"type": "object"},
+          "event": {"type": "string"},
+          "timestamp": {"type": "string", "format": "date-time"}
+        }
+      }
     },
-    {
-      "system": "SmartCity",
-      "description": "Municipal health monitoring systems",
-      "skills": ["monitoreo_preventivo", "dashboard_preventivo"]
-    },
-    {
-      "system": "Mutual de Seguridad",
-      "description": "Occupational health and safety programs",
-      "skills": ["evaluar_riesgo_vocal"]
+    "error": {
+      "status": 400,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"},
+          "code": {"type": "string"},
+          "details": {"type": "object"}
+        }
+      }
     }
-  ],
-  "compliance": {
-    "data_protection": "Ley 19.628",
-    "health_standards": "Ministerio de Salud",
-    "retention": "5 years for individual data, 2 years for aggregates"
   }
 }
