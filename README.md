@@ -144,3 +144,25 @@ SmarterOS v3 now provides:
 - **Vocal health prevention** skills
 - **Contractual blueprints** for formal agreements
 - **Audit-ready operations** with full traceability# Repository updated on Sunday, December 28, 2025
+
+# SmarterOS Specifications Repository
+
+Este repositorio contiene las especificaciones técnicas y documentación para el proyecto SmarterOS.
+
+## Contenido del Repositorio
+
+- `MCP-OPENSPEC-V3.2.md` - Especificación MCP v3.2 con separación de capas
+- `MCP-OPENSPEC-V3.2-EXPANDED.md` - Documentación expandida de la arquitectura MCP
+- `MD-TO-REPO-GUIDE.md` - Guía para convertir archivos MD a repositorio
+- `check.txt` - Archivo de verificación de estado
+- Otros archivos de documentación y especificaciones
+
+## MCP OpenSpec v3.2
+
+La especificación MCP define eventos, métricas y contratos como única fuente de verdad, manteniendo la infraestructura como componente externo y separado.
+
+### Características Principales:
+- Separación clara entre lógica de negocio e infraestructura
+- Eventos como fuente de verdad
+- Métricas calculadas desde eventos reales
+- Contratos estables y reutilizables

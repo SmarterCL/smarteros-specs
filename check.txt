@@ -1,1 +1,4 @@
-Check v3.12
+Check v3.12 - MCP OpenSpec Expandido
+- Nuevo archivo: MCP-OPENSPEC-V3.2-EXPANDED.md
+- Contiene documentación detallada de la arquitectura MCP
+- Expande los conceptos del spec original
