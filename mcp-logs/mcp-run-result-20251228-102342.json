@@ -1,0 +1,43 @@
+{
+  "total_specs": 7,
+  "successful": 0,
+  "failed": 7,
+  "results": [
+    {
+      "id": "agent.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.403617"
+    },
+    {
+      "id": "scout.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.415212"
+    },
+    {
+      "id": "ingestion.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.427008"
+    },
+    {
+      "id": "ingestion.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.433672"
+    },
+    {
+      "id": "runtime.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.439497"
+    },
+    {
+      "id": "agent.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.446788"
+    },
+    {
+      "id": "tenant.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:23:42.452097"
+    }
+  ],
+  "timestamp": "2025-12-28T10:23:42.452105"
+}

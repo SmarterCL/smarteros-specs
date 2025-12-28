@@ -1,0 +1,52 @@
+{
+  "total_specs": 8,
+  "successful": 1,
+  "failed": 7,
+  "results": [
+    {
+      "id": "agent.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.654104"
+    },
+    {
+      "id": "scout.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.666021"
+    },
+    {
+      "id": "ingestion.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.678916"
+    },
+    {
+      "id": "mcp.agent.invoice-validator",
+      "version": 3.0,
+      "status": "success",
+      "inputs_count": 2,
+      "outputs_count": 2,
+      "timestamp": "2025-12-28T10:24:14.682719",
+      "processed": true
+    },
+    {
+      "id": "ingestion.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.689366"
+    },
+    {
+      "id": "runtime.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.694874"
+    },
+    {
+      "id": "agent.v2.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.703980"
+    },
+    {
+      "id": "tenant.yaml",
+      "status": "validation_error",
+      "timestamp": "2025-12-28T10:24:14.711046"
+    }
+  ],
+  "timestamp": "2025-12-28T10:24:14.711054"
+}
