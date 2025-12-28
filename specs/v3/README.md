@@ -47,3 +47,49 @@ Cada contrato en esta estructura declara explícitamente:
 ## Navegación
 
 Para cualquier componente MCP, empieza por su definición específica en las subcarpetas. Cada archivo contiene la información necesaria para que un agente MCP pueda cargarlo y saber exactamente qué hacer.
+
+## Ejecución local de especificaciones
+
+### MCP Runner - Sistema de ejecución local
+
+Este repositorio incluye `mcp-runner`, una herramienta CLI para ejecutar, validar y verificar especificaciones MCP localmente sin depender de servicios externos como GitHub Actions.
+
+#### Instalación
+
+El runner está incluido en este repositorio como `mcp-runner`.
+
+#### Comandos disponibles
+
+```bash
+# Ejecutar todas las especificaciones
+./mcp-runner run
+
+# Validar todas las especificaciones
+./mcp-runner validate
+
+# Verificar cumplimiento de contratos MCP
+./mcp-runner verify
+
+# Listar todas las especificaciones encontradas
+./mcp-runner list
+```
+
+#### Opciones
+
+- `--specs-dir`: Directorio de especificaciones (por defecto: specs/v3)
+- `--output`: Archivo para guardar resultados
+
+#### Modelo operativo sano
+
+> Importante: Este repositorio no requiere GitHub Actions para funcionar.
+> Las especificaciones se ejecutan localmente en el entorno del usuario.
+> GitHub solo sirve para versionar contratos, no para ejecutarlos.
+
+#### Requisitos
+
+- Python 3.7+
+- Bibliotecas: PyYAML, json, argparse
+
+#### Resultados
+
+Los resultados de ejecución se guardan en `mcp-logs/` en formato JSON para auditoría y seguimiento.

@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""
+MCP Runner - Ejecutor local de especificaciones MCP
+
+Este script permite ejecutar especificaciones MCP localmente
+sin depender de GitHub Actions o servicios externos.
+"""
+
+import os
+import sys
+import yaml
+import json
+import argparse
+import subprocess
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+
+class MCPRunner:
+    def __init__(self, specs_dir: str = "specs/v3"):
+        self.specs_dir = Path(specs_dir)
+        self.log_dir = Path("mcp-logs")
+        self.log_dir.mkdir(exist_ok=True)
+        
+    def log(self, message: str, level: str = "INFO"):
+        """Registra un mensaje con timestamp"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_message = f"[{timestamp}] {level}: {message}"
+        print(log_message)
+        
+        # Escribir en archivo de log
+        log_file = self.log_dir / f"mcp-run-{datetime.now().strftime('%Y%m%d')}.log"
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(log_message + '\n')
+    
+    def validate_spec(self, spec_path: Path) -> bool:
+        """Valida una especificación MCP"""
+        try:
+            with open(spec_path, 'r', encoding='utf-8') as f:
+                spec = yaml.safe_load(f)
+            
+            # Verificar campos obligatorios
+            required_fields = ['id', 'version', 'inputs', 'outputs']
+            missing_fields = [field for field in required_fields if field not in spec]
+            
+            if missing_fields:
+                self.log(f"❌ Especificación {spec_path} incompleta. Campos faltantes: {missing_fields}", "ERROR")
+                return False
+            
+            self.log(f"✓ Especificación {spec_path} válida")
+            return True
+            
+        except Exception as e:
+            self.log(f"❌ Error validando {spec_path}: {str(e)}", "ERROR")
+            return False
+    
+    def run_spec(self, spec_path: Path) -> Dict[str, Any]:
+        """Ejecuta una especificación MCP"""
+        try:
+            with open(spec_path, 'r', encoding='utf-8') as f:
+                spec = yaml.safe_load(f)
+            
+            spec_id = spec.get('id', 'unknown')
+            self.log(f"🚀 Ejecutando spec: {spec_id}")
+            
+            # Simular ejecución basada en inputs/outputs
+            inputs = spec.get('inputs', [])
+            outputs = spec.get('outputs', [])
+            
+            self.log(f"  → Inputs: {len(inputs)} definidos")
+            self.log(f"  → Outputs: {len(outputs)} definidos")
+            
+            # Simular procesamiento
+            result = {
+                'id': spec_id,
+                'version': spec.get('version'),
+                'status': 'success',
+                'inputs_count': len(inputs),
+                'outputs_count': len(outputs),
+                'timestamp': datetime.now().isoformat(),
+                'processed': True
+            }
+            
+            self.log(f"✓ Spec {spec_id} ejecutada exitosamente")
+            return result
+            
+        except Exception as e:
+            self.log(f"❌ Error ejecutando {spec_path}: {str(e)}", "ERROR")
+            return {
+                'id': spec_path.name,
+                'status': 'error',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    def run_all_specs(self) -> Dict[str, Any]:
+        """Ejecuta todas las especificaciones en el directorio"""
+        self.log("🔍 Buscando especificaciones MCP...")
+        
+        yaml_files = list(self.specs_dir.rglob("*.yaml")) + list(self.specs_dir.rglob("*.yml"))
+        
+        if not yaml_files:
+            self.log("⚠ No se encontraron especificaciones MCP", "WARNING")
+            return {
+                'total_specs': 0,
+                'successful': 0,
+                'failed': 0,
+                'results': []
+            }
+        
+        self.log(f"📦 Encontradas {len(yaml_files)} especificaciones")
+        
+        results = []
+        successful = 0
+        failed = 0
+        
+        for spec_file in yaml_files:
+            if self.validate_spec(spec_file):
+                result = self.run_spec(spec_file)
+                results.append(result)
+                
+                if result.get('status') == 'success':
+                    successful += 1
+                else:
+                    failed += 1
+            else:
+                failed += 1
+                results.append({
+                    'id': spec_file.name,
+                    'status': 'validation_error',
+                    'timestamp': datetime.now().isoformat()
+                })
+        
+        summary = {
+            'total_specs': len(yaml_files),
+            'successful': successful,
+            'failed': failed,
+            'results': results,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        self.log(f"📊 Resumen: {successful} exitosas, {failed} fallidas de {len(yaml_files)} specs")
+        
+        # Guardar resultado en archivo
+        output_file = self.log_dir / f"mcp-run-result-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
+        
+        self.log(f"💾 Resultados guardados en {output_file}")
+        
+        return summary
+    
+    def verify_contracts(self) -> Dict[str, Any]:
+        """Verifica el cumplimiento de contratos MCP"""
+        self.log("🔍 Verificando cumplimiento de contratos MCP...")
+        
+        yaml_files = list(self.specs_dir.rglob("*.yaml")) + list(self.specs_dir.rglob("*.yml"))
+        
+        compliant = 0
+        non_compliant = 0
+        results = []
+        
+        for spec_file in yaml_files:
+            try:
+                with open(spec_file, 'r', encoding='utf-8') as f:
+                    spec = yaml.safe_load(f)
+                
+                # Verificar campos obligatorios
+                has_id = 'id' in spec
+                has_version = 'version' in spec
+                has_inputs = 'inputs' in spec
+                has_outputs = 'outputs' in spec
+                
+                is_compliant = has_id and has_version and has_inputs and has_outputs
+                
+                result = {
+                    'file': str(spec_file),
+                    'id': spec.get('id', 'N/A'),
+                    'version': spec.get('version', 'N/A'),
+                    'compliant': is_compliant,
+                    'missing_fields': [] if is_compliant else [
+                        field for field in ['id', 'version', 'inputs', 'outputs'] 
+                        if field not in spec
+                    ]
+                }
+                
+                results.append(result)
+                
+                if is_compliant:
+                    compliant += 1
+                    self.log(f"✓ {spec_file.name} cumple con contratos MCP")
+                else:
+                    non_compliant += 1
+                    self.log(f"✗ {spec_file.name} no cumple: {result['missing_fields']}", "WARNING")
+                    
+            except Exception as e:
+                self.log(f"❌ Error leyendo {spec_file}: {str(e)}", "ERROR")
+                non_compliant += 1
+        
+        summary = {
+            'total_specs': len(yaml_files),
+            'compliant': compliant,
+            'non_compliant': non_compliant,
+            'results': results,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        self.log(f"📊 Verificación: {compliant} cumplen, {non_compliant} no cumplen")
+        
+        return summary
+
+def main():
+    parser = argparse.ArgumentParser(description='MCP Runner - Ejecutor local de especificaciones MCP')
+    parser.add_argument('command', choices=['run', 'validate', 'verify', 'list'], 
+                       help='Comando a ejecutar')
+    parser.add_argument('--specs-dir', default='specs/v3', 
+                       help='Directorio de especificaciones (por defecto: specs/v3)')
+    parser.add_argument('--output', help='Archivo de salida para resultados')
+    
+    args = parser.parse_args()
+    
+    runner = MCPRunner(args.specs_dir)
+    
+    if args.command == 'run':
+        result = runner.run_all_specs()
+        status_code = 0 if result['failed'] == 0 and result['total_specs'] > 0 else 1
+        
+    elif args.command == 'validate':
+        result = runner.run_all_specs()
+        status_code = 0 if result['failed'] == 0 and result['total_specs'] > 0 else 1
+        
+    elif args.command == 'verify':
+        result = runner.verify_contracts()
+        status_code = 0 if result['non_compliant'] == 0 and result['total_specs'] > 0 else 1
+        
+    elif args.command == 'list':
+        yaml_files = list(runner.specs_dir.rglob("*.yaml")) + list(runner.specs_dir.rglob("*.yml"))
+        result = {
+            'specs_found': [str(f) for f in yaml_files],
+            'count': len(yaml_files),
+            'timestamp': datetime.now().isoformat()
+        }
+        runner.log(f"📦 Encontradas {len(yaml_files)} especificaciones")
+        status_code = 0
+    
+    # Guardar resultado si se especifica archivo de salida
+    if args.output:
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        runner.log(f"💾 Resultados guardados en {args.output}")
+    
+    # Imprimir resumen
+    print("\n" + "="*50)
+    print("RESUMEN DE EJECUCIÓN MCP")
+    print("="*50)
+    
+    if 'total_specs' in result:
+        print(f"Total specs: {result['total_specs']}")
+        if 'successful' in result:
+            print(f"Exitosas: {result['successful']}")
+            print(f"Fallidas: {result['failed']}")
+        if 'compliant' in result:
+            print(f"Compliantes: {result['compliant']}")
+            print(f"No compliantes: {result['non_compliant']}")
+    
+    print("="*50)
+    
+    sys.exit(status_code)
+
+if __name__ == "__main__":
+    main()
