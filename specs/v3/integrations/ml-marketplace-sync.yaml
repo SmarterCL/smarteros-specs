@@ -1,0 +1,39 @@
+id: mcp.integration.ml-marketplace-sync
+version: 3.0
+status: stable
+inputs:
+  - name: marketplace_data
+    type: object
+    required: true
+  - name: sync_config
+    type: object
+    required: false
+  - name: last_sync_timestamp
+    type: string
+    required: false
+outputs:
+  - name: sync_result
+    type: object
+  - name: processed_records
+    type: integer
+  - name: sync_errors
+    type: array
+rules:
+  - validate_marketplace_data
+  - check_sync_permissions
+  - process_incremental_updates
+  - maintain_data_consistency
+failure_modes:
+  - invalid_marketplace_data
+  - sync_permission_denied
+  - connection_timeout
+  - data_integrity_violation
+description: "Sincronización de datos con marketplace MercadoLibre"
+events_emitted:
+  - ml_sync_started
+  - ml_sync_completed
+  - ml_sync_error
+metrics_tracked:
+  - ml_sync_duration
+  - ml_sync_records_processed
+  - ml_sync_errors_count
