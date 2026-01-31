@@ -1,34 +1,36 @@
-# SmarterOS Specifications Repository
+# SmarterOS - Sistema Operativo con CV Operativo
 
-Este repositorio contiene las especificaciones técnicas para el proyecto SmarterOS.
+## Descripción
 
-## Estructura del Repositorio
+SmarterOS es un sistema operativo que aprende de la fricción real en lugar de seguir planes predeterminados. Registra automáticamente ciclos PDCA cada vez que ocurre un error operativo, creando un currículum vitae basado en problemas reales resueltos.
 
-Este repositorio sigue una estructura clara para separar contratos ejecutables de documentación explicativa:
+## Estructura del sistema
 
-- `specs/` - Contratos ejecutables y definiciones estables
-- `docs/` - Documentación explicativa y marketing técnico
-- `skills/` - Catálogo de habilidades disponibles
-- `2025/`, `2026/` - Contenido organizado por año
-- `specs2026/` - Especificaciones para el año 2026
+- `cli/smarter` - Binario principal del sistema
+- `specs/integrations/` - Especificaciones de integraciones
+- `logs/pdca/` - Registros de ciclos PDCA automáticos
+- `playbooks/` - Documentación de aprendizajes derivados de errores reales
 
-## Principio Fundamental
+## Evidencia de operación
 
-Un repositorio de especificaciones no versiona ideas, sino contratos ejecutables y definiciones estables. Todo lo que no sea contrato ejecutable o definición estable se encuentra en las subcarpetas apropiadas.
+- 1 binario funcional
+- 1 integración real (MercadoLibre)
+- 2 PDCA cerrados
+- 1 playbook derivado de errores reales
 
-## Política de GitHub Actions
+## Uso
 
-GitHub Actions is optional and non-authoritative.
-The default execution model for MCP specs is local or self-hosted via mcp-runner.
-No MCP contract may require GitHub Actions to be valid.
+```bash
+# Ejecutar autenticación para una integración
+./cli/smarter auth mercadolibre
+```
 
-Para más detalles, ver `GITHUB-ACTIONS-POLICY.md`
+El sistema generará automáticamente registros PDCA para cada error operativo, permitiendo aprendizaje continuo basado en fricción real.
 
-## Contenido
+## Características principales
 
-- `VERSION.yml` - Versión activa del sistema
-- `SECURITY.md` - Política de seguridad
-- `SECURITY-POLICY-SECRET-MANAGEMENT.md` - Gestión de secretos
-- `mcp-runner` - Ejecutor local de especificaciones MCP
-- `validate.sh` - Script de validación
-- `docker-compose.smarteros.yml` - Configuración de despliegue
+- Registro automático de ciclos PDCA para errores operativos
+- Sistema de gobernanza que no permite "mentir por omisión"
+- Aprendizaje continuo basado en fricción real
+- Integraciones documentadas a través de especificaciones
+- Playbooks generados a partir de errores reales

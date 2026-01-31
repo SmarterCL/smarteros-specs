@@ -129,13 +129,15 @@ tramp
 # ============================================
 
 # Logs
-logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+
+# PDCA logs (keep these for operational history)
+!logs/pdca/
 
 # Runtime data
 pids/

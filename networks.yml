@@ -1,0 +1,13 @@
+version: '3.9'
+
+networks:
+  edge:
+    driver: bridge
+  odoo_net:
+    driver: bridge
+  chatwoot_net:
+    driver: bridge
+  core_net:
+    driver: bridge
+  monitor_net:
+    driver: bridge

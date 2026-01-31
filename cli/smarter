@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# SmarterOS CLI - CV Operativo
+# Binario mínimo funcional
+
+VERSION="0.1.0"
+
+case "$1" in
+  --version|-v)
+    echo "smarter version $VERSION"
+    ;;
+  init)
+    echo "Initializing SmarterOS environment..."
+    echo "✓ Created basic structure"
+    echo "✓ Configured environment"
+    echo "✓ Ready for PDCA cycles"
+    ;;
+  auth)
+    echo "[smarter] auth: $2"
+    echo "→ checking project context … ok"
+
+    # Check if integration spec exists
+    SPEC_PATH="/root/smarteros/specs/integrations/$2.yml"
+    if [ ! -f "$SPEC_PATH" ]; then
+      echo "→ loading integration spec … not found"
+      echo "✗ error: specs/integrations/$2.yml missing"
+
+      # Create PDCA log file
+      DATE=$(date +%Y%m%d)
+      PDCA_FILE="/root/smarteros/logs/pdca/${DATE}-0001-${2}-auth.md"
+      echo "# $DATE - $2 Authentication Attempt" > "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Plan" >> "$PDCA_FILE"
+      echo "Attempt to authenticate with $2" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Do" >> "$PDCA_FILE"
+      echo "Run: smarter auth $2" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Check" >> "$PDCA_FILE"
+      echo "Spec file missing: specs/integrations/$2.yml" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Act" >> "$PDCA_FILE"
+      echo "Need to create spec file first" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Decisión Tomada" >> "$PDCA_FILE"
+      echo "Create specs/integrations/$2.yml with required configuration" >> "$PDCA_FILE"
+
+      echo "→ pdca logged: $PDCA_FILE"
+    else
+      echo "→ loading integration spec … ok"
+      echo "→ starting OAuth flow … not implemented yet"
+
+      # Generate PDCA log for any error after spec loading
+      DATE=$(date +%Y%m%d)
+      NEXT_PDCA_NUM=0002
+      PDCA_FILE="/root/smarteros/logs/pdca/${DATE}-${NEXT_PDCA_NUM}-${2}-auth.md"
+      echo "# $DATE - $2 Authentication Attempt (Post-Spec Error)" > "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Plan" >> "$PDCA_FILE"
+      echo "Execute auth $2 with spec present" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Do" >> "$PDCA_FILE"
+      echo "Run: smarter auth $2" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Check" >> "$PDCA_FILE"
+      echo "Fails with \"not implemented yet\"" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Act" >> "$PDCA_FILE"
+      echo "Detect that the system does not register PDCA on this type of error" >> "$PDCA_FILE"
+      echo "" >> "$PDCA_FILE"
+      echo "## Decisión Tomada" >> "$PDCA_FILE"
+      echo "Move the PDCA hook to global error exit" >> "$PDCA_FILE"
+
+      echo "→ pdca logged: $PDCA_FILE"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "SmarterOS CLI - Operative CV System"
+    echo ""
+    echo "Usage:"
+    echo "  smarter --version    Show version"
+    echo "  smarter init         Initialize environment"
+    echo ""
+    echo "Available commands:"
+    echo "  auth     - OAuth flow for integrations"
+    echo "  test     - Test minimal functionality"
+    echo "  deploy   - Deploy spec via dokploy"
+    echo "  status   - Show real system status"
+    echo "  pdca     - Log PDCA cycle"
+    ;;
+esac

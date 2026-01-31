@@ -1,0 +1,54 @@
+# Configuración básica de Prometheus
+global:
+  scrape_interval: 15s
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - "localhost:9093"  # Alertmanager endpoint
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  # Docker container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['localhost:8080']
+
+  # Critical infrastructure services
+  - job_name: 'caddy'
+    static_configs:
+      - targets: ['localhost:2019']  # Caddy admin endpoint for metrics
+    metrics_path: '/metrics'
+
+  # API services
+  - job_name: 'smarteros-api-mcp'
+    static_configs:
+      - targets: ['smarteros-api-mcp:3000']
+    metrics_path: '/metrics'  # if metrics are exposed
+
+  # Databases
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['root_postgres_1:5432']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['root_redis_1:6379']
+    scrape_interval: 30s
+
+  # Odoo
+  - job_name: 'odoo'
+    static_configs:
+      - targets: ['odoo-deploy_odoo_1:8069']
+    scrape_interval: 15s
+
+  # Main API
+  - job_name: 'mcp-api'
+    static_configs:
+      - targets: ['root_mcp-api_1:3000']
+    scrape_interval: 15s

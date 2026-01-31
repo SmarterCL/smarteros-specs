@@ -1,0 +1,8 @@
+{
+  "tenant": "string",
+  "action": "string",
+  "context": {
+    "env": "production | staging",
+    "metadata": {}
+  }
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mcp-core:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - VAULT_ENDPOINT=${VAULT_ENDPOINT:-http://vault-mcp:3003}
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+      - ODOO_ADMIN_TOKEN=${ODOO_ADMIN_TOKEN}
+      - ODOO_MASTER_DB=${ODOO_MASTER_DB}
+      - ODOO_HOST=${ODOO_HOST}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - N8N_HOST=${N8N_HOST}
+    depends_on:
+      - vault-mcp
+    networks:
+      - smarteros-network
+
+  vault-mcp:
+    image: smarteros/vault-mcp:latest
+    ports:
+      - "3003:3003"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    networks:
+      - smarteros-network
+
+networks:
+  smarteros-network:
+    driver: bridge

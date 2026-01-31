@@ -1,0 +1,5 @@
+integration: mercadolibre
+auth:
+  type: oauth2
+  required: true
+  status: declared

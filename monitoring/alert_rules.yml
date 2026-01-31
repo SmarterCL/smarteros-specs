@@ -1,0 +1,82 @@
+groups:
+  - name: critical_services
+    rules:
+      # Alert if Caddy is down
+      - alert: CaddyDown
+        expr: up{job="caddy"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Caddy reverse proxy is down"
+          description: "Caddy reverse proxy has been down for more than 1 minute"
+          
+      # Alert if main API is down
+      - alert: MainApiDown
+        expr: up{job="mcp-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Main API service is down"
+          description: "Main API service (root_mcp-api_1) has been down for more than 1 minute"
+          
+      # Alert if API MCP is down
+      - alert: ApiMcpDown
+        expr: up{job="smarteros-api-mcp"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API MCP service is down"
+          description: "API MCP service (smarteros-api-mcp) has been down for more than 1 minute"
+          
+      # Alert if Odoo is down (critical business service)
+      - alert: OdooDown
+        expr: up{job="odoo"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Odoo service is down"
+          description: "Odoo ERP service (odoo-deploy_odoo_1) has been down for more than 1 minute"
+          
+      # Alert if container is restarting frequently
+      - alert: ContainerRestartLoop
+        expr: rate(container_restart_count_total[5m]) > 0.1  # More than 1 restart per 10 minutes
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.container }} has been restarting frequently"
+          
+      # Alert if container CPU usage is too high
+      - alert: HighContainerCpu
+        expr: (sum(rate(container_cpu_usage_seconds_total[5m])) BY (container) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage in container {{ $labels.container }}"
+          description: "Container {{ $labels.container }} has CPU usage above 80% for more than 5 minutes"
+          
+      # Alert if container memory usage is too high
+      - alert: HighContainerMemory
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage in container {{ $labels.container }}"
+          description: "Container {{ $labels.container }} has memory usage above 90% for more than 5 minutes"
+          
+      # Alert if container is down based on cAdvisor
+      - alert: ContainerDown
+        expr: container_last_seen - container_start_time_seconds < 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container {{ $labels.container }} is down"
+          description: "Container {{ $labels.container }} has stopped running"
