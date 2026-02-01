@@ -277,7 +277,7 @@ examples:
           {
             "id": 123456,
             "hostname": "smarteros.smarterbot.cl",
-            "ip": "89.116.23.167",
+            "ip": "0.0.0.0",
             "status": "running"
           }
         ]

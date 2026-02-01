@@ -219,7 +219,7 @@ tools.dns_records_create({
   zone_id: "smarterbot.cl_zone_id",
   type: "A",
   name: "mcp",
-  content: "89.116.23.167", // VPS IP
+  content: "0.0.0.0", // VPS IP
   ttl: 1,
   proxied: true
 });
@@ -232,7 +232,7 @@ tools.dns_records_create({
 3. Add A record:
    - Type: A
    - Name: mcp
-   - Points to: 89.116.23.167
+   - Points to: 0.0.0.0
    - TTL: 3600
 
 ---

@@ -94,7 +94,7 @@ spec:
     tenant_structure:
       path_template: secret/data/tenant/{{tenant_id}}/nexa
       example:
-        tenant_id: rut-76832940-3
+        tenant_id: rut-X-X
         secrets:
           NEXA_MODEL_ID: llama-3-8b-instruct
           NEXA_MODEL_VARIANT: q4_k_m
@@ -112,7 +112,7 @@ spec:
       example: |
         POST /v1/chat/completions
         Headers:
-          X-Tenant-Id: rut-76832940-3
+          X-Tenant-Id: rut-X-X
           Content-Type: application/json
         Body:
           {

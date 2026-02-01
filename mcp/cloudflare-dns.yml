@@ -143,7 +143,7 @@ tools:
 prompt_examples:
   - "List zones under my Cloudflare account"
   - "Show me DNS records for smarterbot.cl"
-  - "Create an A record for mkt.smarterbot.cl pointing to 216.198.79.1"
+  - "Create an A record for mkt.smarterbot.cl pointing to 0.0.0.0"
   - "Create a CNAME record for call.smarterbot.cl pointing to smarterbot.cl"
   - "Update DNS record [record_id] to enable proxy"
   - "Delete DNS record [record_id] from zone [zone_id]"
@@ -165,7 +165,7 @@ use_cases:
          zone_id: "abc123..."
          type: "A"
          name: "mkt"
-         content: "216.198.79.1"
+         content: "0.0.0.0"
          ttl: 1 (auto)
          proxied: true
   
