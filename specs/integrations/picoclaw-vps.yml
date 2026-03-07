@@ -1,0 +1,513 @@
+# 🤖 PicoClaw VPS - SmarterOS v2.2
+
+**Versión:** 1.0.0  
+**Fecha:** 2026-03-06  
+**Estado:** Activo  
+**Ubicación:** VPS 89.116.23.167 (Santiago, Chile)
+
+---
+
+## 📋 DESCRIPCIÓN
+
+PicoClaw es el sistema de hardware industrial remoto de SmarterOS, desplegado en el VPS de Santiago. Proporciona telemetría, control y monitoreo de equipos industriales vía APIs REST y WebSockets.
+
+---
+
+## 🏗️ ARQUITECTURA
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PicoClaw VPS Architecture                                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Hardware Industrial (Remoto)                                   │
+│  ├── Placa 1: Voltaje                                           │
+│  ├── Placa 2: RPM                                               │
+│  └── Placa 3: Temperatura                                       │
+│                                                                 │
+│  VPS Santiago (89.116.23.167)                                   │
+│  ├── Docker Containers                                          │
+│  │   ├── picoclaw-api:8080                                      │
+│  │   ├── picoclaw-mqtt:1883                                     │
+│  │   └── picoclaw-influxdb:8086                                 │
+│  ├── Dokploy                                                    │
+│  ├── Grafana (Métricas)                                         │
+│  └── Telegraf (Agent)                                           │
+│                                                                 │
+│  APIs                                                           │
+│  ├── REST: http://89.116.23.167:8080/api                        │
+│  ├── WebSocket: ws://89.116.23.167:8080/ws                      │
+│  └── MQTT: mqtt://89.116.23.167:1883                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 CONFIGURACIÓN
+
+### Docker Compose (VPS)
+
+```yaml
+version: '3.8'
+
+services:
+  picoclaw-api:
+    image: smartercl/picoclaw-api:latest
+    container_name: picoclaw-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - MQTT_HOST=picoclaw-mqtt
+      - MQTT_PORT=1883
+      - INFLUXDB_HOST=picoclaw-influxdb
+      - INFLUXDB_PORT=8086
+      - INFLUXDB_BUCKET=picoclaw_telemetry
+    volumes:
+      - /opt/smarteros/picoclaw/config:/app/config
+      - /opt/smarteros/picoclaw/logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - picoclaw_net
+      - monitor_net
+
+  picoclaw-mqtt:
+    image: eclipse-mosquitto:latest
+    container_name: picoclaw-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - /opt/smarteros/picoclaw/mqtt/config:/mosquitto/config
+      - /opt/smarteros/picoclaw/mqtt/data:/mosquitto/data
+      - /opt/smarteros/picoclaw/mqtt/log:/mosquitto/log
+    restart: unless-stopped
+    networks:
+      - picoclaw_net
+
+  picoclaw-influxdb:
+    image: influxdb:2.7
+    container_name: picoclaw-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=smarteros
+      - DOCKER_INFLUXDB_INIT_PASSWORD=smarteros_password
+      - DOCKER_INFLUXDB_INIT_ORG=smarteros
+      - DOCKER_INFLUXDB_INIT_BUCKET=picoclaw_telemetry
+    volumes:
+      - /opt/smarteros/picoclaw/influxdb/data:/var/lib/influxdb2
+      - /opt/smarteros/picoclaw/influxdb/config:/etc/influxdb2
+    restart: unless-stopped
+    networks:
+      - picoclaw_net
+
+  picoclaw-telegraf:
+    image: telegraf:latest
+    container_name: picoclaw-telegraf
+    environment:
+      - HOST_ETC=/host/etc
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+    volumes:
+      - /opt/smarteros/picoclaw/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /:/host:ro
+    restart: unless-stopped
+    networks:
+      - picoclaw_net
+    depends_on:
+      - picoclaw-influxdb
+
+networks:
+  picoclaw_net:
+    driver: bridge
+  monitor_net:
+    driver: bridge
+    external: true
+```
+
+---
+
+## 📡 ENDPOINTS
+
+### REST API
+
+```
+Base URL: http://89.116.23.167:8080/api/v1
+
+Endpoints:
+  GET  /health              - Health check
+  GET  /status              - Status general
+  GET  /telemetry           - Telemetría en tiempo real
+  GET  /telemetry/history   - Histórico de telemetría
+  GET  /placas               - Listar placas
+  GET  /placas/:id           - Obtener placa por ID
+  POST /placas/:id/command  - Enviar comando a placa
+  GET  /alerts              - Listar alertas
+  POST /alerts              - Crear alerta
+  GET  /metrics             - Métricas para Grafana
+```
+
+### WebSocket
+
+```
+URL: ws://89.116.23.167:8080/ws
+
+Events:
+  - telemetry:update → { placa_id, tipo, valor, timestamp }
+  - alert:triggered → { alert_id, tipo, severidad, mensaje }
+  - status:change → { placa_id, estado_anterior, estado_nuevo }
+```
+
+### MQTT Topics
+
+```
+picoclaw/telemetry/+       - Telemetría de todas las placas
+picoclaw/telemetry/voltaje - Telemetría de voltaje
+picoclaw/telemetry/rpm     - Telemetría de RPM
+picoclaw/telemetry/temp    - Telemetría de temperatura
+picoclaw/alerts/+          - Alertas del sistema
+picoclaw/commands/+        - Comandos hacia placas
+```
+
+---
+
+## 🔐 SEGURIDAD
+
+### Autenticación
+
+```yaml
+auth:
+  method: "bearer_token"
+  token_header: "Authorization"
+  token_prefix: "Bearer"
+  vault_path: "smarteros/picoclaw"
+  
+  tokens:
+    admin:
+      scope: ["read", "write", "admin"]
+      vault_key: "admin_token"
+    
+    read_only:
+      scope: ["read"]
+      vault_key: "read_token"
+    
+    write_only:
+      scope: ["write"]
+      vault_key: "write_token"
+```
+
+### Firewall (UFW)
+
+```bash
+# Permitir APIs PicoClaw
+ufw allow 8080/tcp comment "PicoClaw API"
+ufw allow 1883/tcp comment "PicoClaw MQTT"
+ufw allow 9001/tcp comment "PicoClaw MQTT WebSocket"
+
+# Permitir Grafana
+ufw allow 3000/tcp comment "Grafana"
+
+# Permitir InfluxDB (solo red interna)
+ufw allow from 10.0.0.0/8 to any port 8086 proto tcp
+```
+
+---
+
+## 📊 GRAFANA DASHBOARD
+
+### Data Sources
+
+```yaml
+datasources:
+  - name: PicoClaw InfluxDB
+    type: influxdb
+    url: http://picoclaw-influxdb:8086
+    access: proxy
+    database: picoclaw_telemetry
+    org: smarteros
+    default: true
+
+  - name: PicoClaw API
+    type: api
+    url: http://picoclaw-api:8080/api/v1/metrics
+    access: proxy
+```
+
+### Dashboards
+
+```yaml
+dashboards:
+  - name: "PicoClaw - Overview"
+    uid: "picoclaw-overview"
+    panels:
+      - title: "Voltaje Actual"
+        type: gauge
+        query: "SELECT last(\"valor\") FROM \"voltaje\" WHERE $timeFilter"
+        
+      - title: "RPM Actual"
+        type: gauge
+        query: "SELECT last(\"valor\") FROM \"rpm\" WHERE $timeFilter"
+        
+      - title: "Temperatura Actual"
+        type: gauge
+        query: "SELECT last(\"valor\") FROM \"temperatura\" WHERE $timeFilter"
+        
+      - title: "Telemetría Histórica"
+        type: graph
+        queries:
+          - "SELECT mean(\"valor\") FROM \"voltaje\" WHERE $timeFilter GROUP BY time(5m)"
+          - "SELECT mean(\"valor\") FROM \"rpm\" WHERE $timeFilter GROUP BY time(5m)"
+          - "SELECT mean(\"valor\") FROM \"temperatura\" WHERE $timeFilter GROUP BY time(5m)"
+          
+      - title: "Alertas Activas"
+        type: table
+        query: "SELECT * FROM \"alerts\" WHERE \"estado\" = 'activa' AND $timeFilter"
+
+  - name: "PicoClaw - Hardware Status"
+    uid: "picoclaw-hardware"
+    panels:
+      - title: "Estado de Placas"
+        type: stat
+        query: "SELECT last(\"estado\") FROM \"placas\" WHERE $timeFilter GROUP BY \"placa_id\""
+        
+      - title: "Uptime"
+        type: stat
+        query: "SELECT last(\"uptime\") FROM \"system\" WHERE $timeFilter"
+```
+
+---
+
+## 🔧 COMANDOS VPS
+
+### Deploy en VPS
+
+```bash
+# Conectar al VPS
+ssh root@89.116.23.167
+
+# Ir al directorio
+cd /opt/smarteros
+
+# Crear directorios
+mkdir -p picoclaw/{config,logs,mqtt/{config,data,log},influxdb/{data,config},telegraf}
+
+# Copiar docker-compose
+cp docker-compose.picoclaw.yml picoclaw/docker-compose.yml
+
+# Iniciar servicios
+cd picoclaw
+docker compose up -d
+
+# Verificar estado
+docker compose ps
+
+# Ver logs
+docker compose logs -f picoclaw-api
+```
+
+### Verificar Estado
+
+```bash
+# Health check
+curl http://localhost:8080/api/v1/health
+
+# Ver telemetría
+curl http://localhost:8080/api/v1/telemetry
+
+# Ver placas
+curl http://localhost:8080/api/v1/placas
+
+# Ver métricas para Grafana
+curl http://localhost:8080/api/v1/metrics
+```
+
+### Logs
+
+```bash
+# Ver logs en tiempo real
+docker compose logs -f picoclaw-api
+docker compose logs -f picoclaw-mqtt
+docker compose logs -f picoclaw-influxdb
+docker compose logs -f picoclaw-telegraf
+
+# Ver logs específicos
+docker compose logs --tail=100 picoclaw-api
+```
+
+### Reiniciar Servicios
+
+```bash
+# Reiniciar todos
+docker compose restart
+
+# Reiniciar específico
+docker compose restart picoclaw-api
+
+# Detener todos
+docker compose down
+
+# Iniciar todos
+docker compose up -d
+```
+
+---
+
+## 📱 INTEGRACIÓN CON TELEGRAM
+
+### Comandos Disponibles
+
+```
+@smarterbot
+
+/picoclaw status - Estado de PicoClaw
+/picoclaw telemetry - Telemetría actual
+/picoclaw placas - Listar placas
+/picoclaw alerts - Alertas activas
+/picoclaw grafana - Link a Grafana
+```
+
+### Webhook a Telegram
+
+```javascript
+// Cuando una alerta se activa
+POST https://api.telegram.org/bot{TOKEN}/sendMessage
+{
+  "chat_id": "{CHAT_ID}",
+  "text": "🚨 Alerta PicoClaw\n\nTipo: {tipo}\nSeveridad: {severidad}\nMensaje: {mensaje}\nTimestamp: {timestamp}",
+  "parse_mode": "Markdown"
+}
+```
+
+---
+
+## 🔗 INTEGRACIÓN CON MCP
+
+### Configuración MCP
+
+```json
+{
+  "mcpServers": {
+    "picoclaw-vps": {
+      "url": "http://89.116.23.167:8080/api/v1/mcp",
+      "name": "PicoClaw VPS - Hardware Industrial",
+      "description": "Telemetría y control de hardware industrial en VPS Santiago",
+      "permissions": {
+        "read": ["telemetry", "placas", "alerts", "metrics"],
+        "write": ["commands"],
+        "execute": ["get_telemetry", "send_command", "get_alerts"]
+      }
+    }
+  }
+}
+```
+
+### Herramientas MCP
+
+```yaml
+tools:
+  - name: "get_telemetry"
+    description: "Obtener telemetría en tiempo real"
+    endpoint: "GET /telemetry"
+    
+  - name: "get_placas"
+    description: "Listar placas conectadas"
+    endpoint: "GET /placas"
+    
+  - name: "send_command"
+    description: "Enviar comando a placa"
+    endpoint: "POST /placas/:id/command"
+    
+  - name: "get_alerts"
+    description: "Obtener alertas activas"
+    endpoint: "GET /alerts"
+    
+  - name: "get_metrics"
+    description: "Obtener métricas para Grafana"
+    endpoint: "GET /metrics"
+```
+
+---
+
+## 📊 MONITOREO
+
+### Health Checks
+
+```yaml
+health_checks:
+  - name: "PicoClaw API"
+    url: "http://89.116.23.167:8080/api/v1/health"
+    interval: 30s
+    timeout: 5s
+    
+  - name: "PicoClaw MQTT"
+    url: "http://89.116.23.167:1883"
+    type: "tcp"
+    interval: 30s
+    
+  - name: "PicoClaw InfluxDB"
+    url: "http://89.116.23.167:8086/health"
+    interval: 30s
+    
+  - name: "Grafana"
+    url: "http://89.116.23.167:3000/api/health"
+    interval: 30s
+```
+
+### Alertas
+
+```yaml
+alerts:
+  - name: "Placa Offline"
+    condition: "placa.estado == 'offline'"
+    severity: "critical"
+    notification: "telegram"
+    
+  - name: "Voltaje Alto"
+    condition: "telemetry.voltaje > 250"
+    severity: "warning"
+    notification: "telegram"
+    
+  - name: "Temperatura Crítica"
+    condition: "telemetry.temperatura > 80"
+    severity: "critical"
+    notification: "telegram"
+    
+  - name: "RPM Anormales"
+    condition: "telemetry.rpm < 100 OR telemetry.rpm > 5000"
+    severity: "warning"
+    notification: "telegram"
+```
+
+---
+
+## 🎯 PRÓXIMOS PASOS
+
+### Inmediatos
+
+1. ⏳ **Deploy en VPS** - Ejecutar docker-compose
+2. ⏳ **Configurar Grafana** - Importar dashboards
+3. ⏳ **Conectar Telegram** - Configurar webhooks
+4. ⏳ **Testear APIs** - Verificar endpoints
+
+### Corto Plazo
+
+5. ⏳ **Integrar con MCP** - Configurar en WebMCP
+6. ⏳ **Configurar Alertas** - Telegram notifications
+7. ⏳ **Documentar APIs** - OpenAPI/Swagger
+8. ⏳ **CI/CD** - Auto-deploy desde GitHub
+
+---
+
+## 📞 SOPORTE
+
+**GitHub:** https://github.com/SmarterCL/smarteros-specs  
+**VPS:** 89.116.23.167 (Santiago, Chile)  
+**Dokploy:** https://dokploy.smarterbot.cl  
+**Grafana:** http://89.116.23.167:3000
+
+---
+
+**ESTADO:** ⏳ **ESPECIFICACIÓN CREADA - PENDIENTE DEPLOY**
