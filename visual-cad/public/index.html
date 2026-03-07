@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmarterOS v4 - Visual CAD</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; overflow: hidden; }
+    .header { background: #16213e; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f3460; }
+    .header h1 { font-size: 20px; color: #e94560; }
+    .canvas { display: grid; grid-template-columns: 250px 1fr 300px; height: calc(100vh - 60px); }
+    .sidebar { background: #16213e; padding: 20px; border-right: 1px solid #0f3460; overflow-y: auto; }
+    .sidebar h2 { font-size: 14px; color: #e94560; margin-bottom: 15px; text-transform: uppercase; }
+    .node-types { display: flex; flex-direction: column; gap: 10px; }
+    .node-type { background: #0f3460; padding: 12px; border-radius: 6px; cursor: grab; transition: all 0.2s; }
+    .node-type:hover { background: #e94560; transform: translateX(5px); }
+    .main-canvas { background: #1a1a2e; position: relative; overflow: hidden; }
+    .grid { background-image: radial-gradient(#0f3460 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3; height: 100%; }
+    .properties { background: #16213e; padding: 20px; border-left: 1px solid #0f3460; overflow-y: auto; }
+    .properties h2 { font-size: 14px; color: #e94560; margin-bottom: 15px; }
+    .prop-group { margin-bottom: 20px; }
+    .prop-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+    .prop-group input, .prop-group select, .prop-group textarea { width: 100%; padding: 8px; background: #0f3460; border: 1px solid #16213e; color: #eee; border-radius: 4px; }
+    .toolbar { display: flex; gap: 10px; }
+    .btn { background: #e94560; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn:hover { background: #ff6b6b; }
+    .btn-secondary { background: #0f3460; }
+    .btn-secondary:hover { background: #1a4a7a; }
+    .dropped-node { position: absolute; background: #0f3460; border: 2px solid #e94560; border-radius: 8px; padding: 15px; min-width: 150px; cursor: move; }
+    .dropped-node h3 { font-size: 14px; margin-bottom: 5px; }
+    .dropped-node p { font-size: 11px; color: #aaa; }
+    .connection-line { position: absolute; height: 2px; background: #e94560; transform-origin: left center; }
+    .stats { margin-top: 20px; padding-top: 20px; border-top: 1px solid #0f3460; }
+    .stat { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
+    .stat-value { color: #e94560; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎨 SmarterOS v4 - Visual CAD</h1>
+    <div class="toolbar">
+      <button class="btn btn-secondary" onclick="newBlueprint()">📄 Nuevo</button>
+      <button class="btn btn-secondary" onclick="loadBlueprint()">📂 Cargar</button>
+      <button class="btn btn-secondary" onclick="saveBlueprint()">💾 Guardar</button>
+      <button class="btn" onclick="exportBlueprint()">📤 Exportar</button>
+      <button class="btn" onclick="runBlueprint()">▶️ Ejecutar</button>
+    </div>
+  </div>
+  
+  <div class="canvas">
+    <div class="sidebar">
+      <h2>📦 Tipos de Nodos</h2>
+      <div class="node-types">
+        <div class="node-type" draggable="true" data-type="web">🌐 Web / Landing</div>
+        <div class="node-type" draggable="true" data-type="messaging">💬 Messaging</div>
+        <div class="node-type" draggable="true" data-type="payment">💰 Payment</div>
+        <div class="node-type" draggable="true" data-type="notification">📢 Notification</div>
+        <div class="node-type" draggable="true" data-type="logic">⚙️ Logic</div>
+        <div class="node-type" draggable="true" data-type="rag">🧠 RAG / IA</div>
+        <div class="node-type" draggable="true" data-type="mcp">🔗 MCP Agent</div>
+        <div class="node-type" draggable="true" data-type="start">🟢 Start</div>
+        <div class="node-type" draggable="true" data-type="end">🔴 End</div>
+      </div>
+      
+      <div class="stats">
+        <h2>📊 Estadísticas</h2>
+        <div class="stat"><span>Nodos:</span><span class="stat-value" id="stat-nodes">0</span></div>
+        <div class="stat"><span>Conexiones:</span><span class="stat-value" id="stat-connections">0</span></div>
+        <div class="stat"><span>Skills:</span><span class="stat-value" id="stat-skills">0</span></div>
+        <div class="stat"><span>MCP Agents:</span><span class="stat-value" id="stat-mcp">0</span></div>
+      </div>
+    </div>
+    
+    <div class="main-canvas" id="canvas" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <div class="grid"></div>
+    </div>
+    
+    <div class="properties">
+      <h2>⚙️ Propiedades</h2>
+      <div id="properties-content">
+        <p style="color: #666; font-size: 12px;">Seleccioná un nodo para ver sus propiedades</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let nodes = [];
+    let connections = [];
+    let selectedNode = null;
+    let nodeIdCounter = 0;
+    
+    // Drag and drop
+    document.querySelectorAll('.node-type').forEach(el => {
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('type', e.target.dataset.type);
+        e.dataTransfer.setData('name', e.target.textContent);
+      });
+    });
+    
+    function allowDrop(e) { e.preventDefault(); }
+    
+    function drop(e) {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('type');
+      const name = e.dataTransfer.getData('name');
+      const rect = document.getElementById('canvas').getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      createNode(type, name, x, y);
+    }
+    
+    function createNode(type, name, x, y) {
+      const id = `node_${nodeIdCounter++}`;
+      const node = { id, type, name, x, y, config: {} };
+      nodes.push(node);
+      
+      const el = document.createElement('div');
+      el.className = 'dropped-node';
+      el.id = id;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.innerHTML = `<h3>${name}</h3><p>${type}</p><p style="font-size:9px;color:#666;">${id}</p>`;
+      el.onclick = () => selectNode(node);
+      el.onmousedown = (e) => startDrag(e, el, node);
+      
+      document.getElementById('canvas').appendChild(el);
+      updateStats();
+      selectNode(node);
+    }
+    
+    function startDrag(e, el, node) {
+      e.preventDefault();
+      const shiftX = e.clientX - el.getBoundingClientRect().left;
+      const shiftY = e.clientY - el.getBoundingClientRect().top;
+      
+      function moveAt(pageX, pageY) {
+        const rect = document.getElementById('canvas').getBoundingClientRect();
+        node.x = pageX - rect.left - shiftX;
+        node.y = pageY - rect.top - shiftY;
+        el.style.left = node.x + 'px';
+        el.style.top = node.y + 'px';
+      }
+      
+      function onMouseMove(event) { moveAt(event.pageX, event.pageY); }
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.onmouseup = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.onmouseup = null;
+      };
+    }
+    
+    function selectNode(node) {
+      selectedNode = node;
+      document.getElementById('properties-content').innerHTML = `
+        <div class="prop-group">
+          <label>ID</label>
+          <input type="text" value="${node.id}" disabled>
+        </div>
+        <div class="prop-group">
+          <label>Tipo</label>
+          <input type="text" value="${node.type}" disabled>
+        </div>
+        <div class="prop-group">
+          <label>Nombre</label>
+          <input type="text" value="${node.name}" onchange="updateNodeName(this.value)">
+        </div>
+        <div class="prop-group">
+          <label>Skill</label>
+          <select onchange="updateNodeSkill(this.value)">
+            <option value="">Seleccionar skill</option>
+            <option value="landing-page-builder">Landing Page Builder</option>
+            <option value="whatsapp-responder">WhatsApp Responder</option>
+            <option value="payment-router">Payment Router</option>
+            <option value="telegram-notify">Telegram Notify</option>
+            <option value="ai-reply">AI Reply</option>
+          </select>
+        </div>
+        <div class="prop-group">
+          <label>Configuración (JSON)</label>
+          <textarea rows="5" onchange="updateNodeConfig(this.value)">${JSON.stringify(node.config, null, 2)}</textarea>
+        </div>
+      `;
+    }
+    
+    function updateNodeName(value) { selectedNode.name = value; }
+    function updateNodeSkill(value) { selectedNode.skill = value; updateStats(); }
+    function updateNodeConfig(value) { try { selectedNode.config = JSON.parse(value); } catch(e) {} }
+    
+    function updateStats() {
+      document.getElementById('stat-nodes').textContent = nodes.length;
+      document.getElementById('stat-connections').textContent = connections.length;
+      document.getElementById('stat-skills').textContent = nodes.filter(n => n.skill).length;
+      document.getElementById('stat-mcp').textContent = nodes.filter(n => n.type === 'mcp').length;
+    }
+    
+    function newBlueprint() {
+      if(confirm('¿Crear nuevo blueprint? Se perderán los cambios no guardados.')) {
+        nodes = [];
+        connections = [];
+        nodeIdCounter = 0;
+        document.querySelectorAll('.dropped-node').forEach(el => el.remove());
+        updateStats();
+      }
+    }
+    
+    function saveBlueprint() {
+      const blueprint = {
+        name: 'blueprint-' + Date.now(),
+        version: '1.0.0',
+        nodes: nodes,
+        connections: connections
+      };
+      localStorage.setItem('smarter-blueprint', JSON.stringify(blueprint));
+      alert('✅ Blueprint guardado en localStorage');
+    }
+    
+    function loadBlueprint() {
+      const saved = localStorage.getItem('smarter-blueprint');
+      if(saved) {
+        const blueprint = JSON.parse(saved);
+        nodes = blueprint.nodes || [];
+        connections = blueprint.connections || [];
+        nodeIdCounter = nodes.length;
+        nodes.forEach(n => createNode(n.type, n.name, n.x, n.y, false));
+        updateStats();
+      } else {
+        alert('No hay blueprints guardados');
+      }
+    }
+    
+    function exportBlueprint() {
+      const blueprint = {
+        blueprint: {
+          name: 'exported-blueprint',
+          version: '1.0.0',
+          nodes: nodes.map(n => ({
+            id: n.id,
+            type: n.type,
+            skill: n.skill || '',
+            config: n.config
+          })),
+          connections: connections
+        }
+      };
+      const blob = new Blob([JSON.stringify(blueprint, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'blueprint.json';
+      a.click();
+    }
+    
+    function runBlueprint() {
+      alert('🚀 Ejecutando blueprint...\n\nNota: Requiere MCP Agents y Execution Engine activos.');
+    }
+  </script>
+</body>
+</html>

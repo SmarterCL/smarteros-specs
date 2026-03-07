@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # n8n - Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n-smarteros
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - OLLAMA_HOST=http://ollama:11434
+      - GENERIC_TIMEZONE=America/Santiago
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+    depends_on:
+      - postgres
+
+  # Ollama - IA Local
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-smarteros
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+    # Nota: En Mac Intel, mejor Ollama nativo para GPU access
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # PostgreSQL - Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: n8n-postgres
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8n_password_secure
+      - POSTGRES_DB=n8n
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+
+  # Redis - Cache
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+
+volumes:
+  n8n_data:
+  postgres_data:
+  ollama_data:
+  redis_data:
+
+networks:
+  smarteros-net:
+    driver: bridge
+    name: smarteros-network
