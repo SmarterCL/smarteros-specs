@@ -1,0 +1,282 @@
+openapi: 3.0.0
+info:
+  title: SmarterOS Public API
+  description: |
+    API Pública de SmarterOS v3.0
+    
+    ## Autenticación
+    
+    Todas las APIs requieren autenticación vía Bearer Token:
+    ```
+    Authorization: Bearer <API_TOKEN>
+    ```
+    
+    ## Endpoints
+    
+    - MCP Agents: localhost:3050-3060
+    - Cloudflare DNS: api.cloudflare.com
+    - Telegram Bot: api.telegram.org
+    - Supabase: supabase.co/rest/v1
+    
+  version: 3.0.0
+  contact:
+    name: SmarterOS Team
+    url: https://github.com/SmarterCL/smarteros-specs
+    email: contact@smarterbot.cl
+
+servers:
+  - url: https://api.smarterbot.cl
+    description: Producción
+  - url: https://api-dev.smarterbot.cl
+    description: Desarrollo
+  - url: http://localhost:3050
+    description: Local Development
+
+tags:
+  - name: MCP Agents
+    description: Model Context Protocol Agents
+  - name: Cloudflare DNS
+    description: DNS Management via Cloudflare API
+  - name: Telegram Bot
+    description: Telegram Bot API
+  - name: Supabase
+    description: Database and Storage
+  - name: PicoClaw
+    description: Hardware Industrial Telemetry
+
+paths:
+  # MCP Agents
+  /mcp/health:
+    get:
+      tags: [MCP Agents]
+      summary: Health check de todos los agentes MCP
+      operationId: mcpHealth
+      responses:
+        '200':
+          description: Todos los agentes online
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        port:
+                          type: integer
+                        status:
+                          type: string
+
+  /mcp/session:
+    get:
+      tags: [MCP Agents]
+      summary: Obtener sesiones activas
+      operationId: mcpSessions
+      responses:
+        '200':
+          description: Lista de sesiones activas
+
+  # Cloudflare DNS
+  /cloudflare/dns:
+    get:
+      tags: [Cloudflare DNS]
+      summary: Listar DNS records
+      operationId: cloudflareDnsList
+      parameters:
+        - name: zone
+          in: query
+          required: true
+          schema:
+            type: string
+            example: smarterbot.cl
+      responses:
+        '200':
+          description: Lista de DNS records
+          
+    post:
+      tags: [Cloudflare DNS]
+      summary: Crear DNS record
+      operationId: cloudflareDnsCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                zone:
+                  type: string
+                type:
+                  type: string
+                  enum: [A, AAAA, CNAME, MX, TXT]
+                name:
+                  type: string
+                content:
+                  type: string
+                proxied:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: DNS record creado
+
+  # Telegram Bot
+  /telegram/send:
+    post:
+      tags: [Telegram Bot]
+      summary: Enviar mensaje a Telegram
+      operationId: telegramSend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chat_id:
+                  type: string
+                text:
+                  type: string
+                parse_mode:
+                  type: string
+                  enum: [Markdown, HTML]
+      responses:
+        '200':
+          description: Mensaje enviado
+
+  # Supabase
+  /supabase/query:
+    post:
+      tags: [Supabase]
+      summary: Ejecutar query en Supabase
+      operationId: supabaseQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schema:
+                  type: string
+                  enum: [cl_prod, it_prod, shared]
+                table:
+                  type: string
+                query:
+                  type: string
+      responses:
+        '200':
+          description: Resultado del query
+
+  # PicoClaw
+  /picoclaw/telemetry:
+    get:
+      tags: [PicoClaw]
+      summary: Obtener telemetría en tiempo real
+      operationId: picoclawTelemetry
+      responses:
+        '200':
+          description: Datos de telemetría
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  voltaje:
+                    type: number
+                    example: 220.5
+                  rpm:
+                    type: number
+                    example: 1500.0
+                  temperatura:
+                    type: number
+                    example: 45.2
+
+  /picoclaw/alerts:
+    get:
+      tags: [PicoClaw]
+      summary: Obtener alertas activas
+      operationId: picoclawAlerts
+      responses:
+        '200':
+          description: Lista de alertas
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de autenticación JWT
+    
+    cloudflareAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Cloudflare_API_Token
+      description: Cloudflare API Token
+    
+    supabaseAuth:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase API Key
+
+security:
+  - bearerAuth: []
+
+x-smarteros:
+  version: 3.0.0
+  mcp_agents:
+    - name: Session Manager
+      port: 3050
+      status: active
+    - name: Cloudflare MCP
+      port: 3052
+      status: active
+    - name: GitHub MCP
+      port: 3053
+      status: active
+    - name: MercadoPago MCP
+      port: 3054
+      status: active
+    - name: Flow.cl MCP
+      port: 3055
+      status: pending
+    - name: Odoo Integration
+      port: 3057
+      status: active
+    - name: PicoClaw
+      port: 3059
+      status: pending
+  
+  rules:
+    - id: 1
+      name: Todo en specs/
+      status: active
+      
+    - id: 2
+      name: GitHub First
+      status: active
+      
+    - id: 3
+      name: Cloudflare Only (NO Hostinger)
+      status: active
+      denied:
+        - Hostinger
+        - GoDaddy
+        - Namecheap
+      
+    - id: 4
+      name: API Pública Documentada
+      status: active
+      
+    - id: 5
+      name: docs.smarterbot.cl Semántica
+      status: active
