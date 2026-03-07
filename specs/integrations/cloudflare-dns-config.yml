@@ -1,0 +1,206 @@
+# 🌐 CLOUDFLARE DNS CONFIGURATION - SmarterOS v3.0
+
+**Versión:** 1.0.0  
+**Fecha:** 2026-03-06  
+**Estado:** Pendiente de configuración  
+**Zona:** smarterbot.cl
+
+---
+
+## 📋 DESCRIPCIÓN
+
+Configuración de DNS en Cloudflare para los dominios de SmarterOS: smarterprop.cl, it.smarterprop.cl, y tienda.smarterbot.cl.
+
+---
+
+## 🏗️ ARQUITECTURA
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLOUDFLARE DNS CONFIGURATION                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Dominios Principales                                           │
+│  ├── smarterprop.cl (Main - Chile)                              │
+│  ├── it.smarterprop.cl (Branch - Italia)                        │
+│  └── tienda.smarterbot.cl (E-commerce)                          │
+│                                                                 │
+│  DNS Records                                                    │
+│  ├── A Records → 89.116.23.167 (VPS)                            │
+│  ├── CNAME → smarterprop.cl                                     │
+│  ├── MX → Email (Google Workspace)                              │
+│  └── TXT → Verification (Google, SII)                           │
+│                                                                 │
+│  Cloudflare Features                                            │
+│  ├── Proxy (Naranja) → CDN + SSL                                │
+│  ├── DNS Only (Gris) → Sin proxy                                │
+│  ├── Page Rules → Redirects                                     │
+│  └── Workers → Serverless Functions                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 CONFIGURACIÓN DE DNS
+
+### 1. smarterprop.cl (Main - Chile)
+
+| Tipo | Nombre | Contenido | Proxy | TTL |
+|------|--------|-----------|-------|-----|
+| **A** | @ | 89.116.23.167 | 🟠 Proxied | Auto |
+| **A** | www | 89.116.23.167 | 🟠 Proxied | Auto |
+| **TXT** | @ | google-site-verification=xxx | ⚪ DNS Only | Auto |
+| **MX** | @ | ASPMX.L.GOOGLE.COM | ⚪ DNS Only | Auto |
+
+### 2. it.smarterprop.cl (Branch - Italia)
+
+| Tipo | Nombre | Contenido | Proxy | TTL |
+|------|--------|-----------|-------|-----|
+| **CNAME** | @ | smarterprop.cl | 🟠 Proxied | Auto |
+| **CNAME** | www | smarterprop.cl | 🟠 Proxied | Auto |
+
+### 3. tienda.smarterbot.cl (E-commerce)
+
+| Tipo | Nombre | Contenido | Proxy | TTL |
+|------|--------|-----------|-------|-----|
+| **A** | @ | 89.116.23.167 | 🟠 Proxied | Auto |
+| **CNAME** | www | tienda.smarterbot.cl | 🟠 Proxied | Auto |
+
+### 4. Subdominios Adicionales
+
+| Tipo | Nombre | Contenido | Proxy | TTL |
+|------|--------|-----------|-------|-----|
+| **A** | api | 89.116.23.167 | 🟠 Proxied | Auto |
+| **A** | grafana | 89.116.23.167 | 🟠 Proxied | Auto |
+| **A** | odoo | 89.116.23.167 | 🟠 Proxied | Auto |
+| **A** | n8n | 89.116.23.167 | 🟠 Proxied | Auto |
+| **A** | dokploy | 89.116.23.167 | 🟠 Proxied | Auto |
+
+---
+
+## 🔧 COMANDOS MCP (Cloudflare MCP)
+
+### Listar Zonas
+
+```
+/cf dns zones
+```
+
+### Listar DNS Records
+
+```
+/cf dns list smarterprop.cl
+```
+
+### Crear A Record
+
+```
+/cf dns create smarterprop.cl A 89.116.23.167
+```
+
+### Crear CNAME Record
+
+```
+/cf dns create it.smarterprop.cl CNAME smarterprop.cl
+```
+
+### Crear TXT Record
+
+```
+/cf dns create smarterprop.cl TXT "google-site-verification=xxx"
+```
+
+---
+
+## 🧪 VERIFICACIÓN
+
+### 1. Verificar DNS Propagation
+
+```bash
+# Verificar A record
+dig smarterprop.cl A +short
+# Esperado: 89.116.23.167
+
+# Verificar CNAME
+dig it.smarterprop.cl CNAME +short
+# Esperado: smarterprop.cl.
+
+# Verificar MX
+dig smarterprop.cl MX +short
+# Esperado: ASPMX.L.GOOGLE.COM.
+```
+
+### 2. Verificar SSL
+
+```bash
+# Verificar certificado SSL
+curl -I https://smarterprop.cl
+# Esperado: HTTP/2 200
+
+# Verificar cadena SSL
+openssl s_client -connect smarterprop.cl:443 -servername smarterprop.cl
+```
+
+### 3. Verificar desde MCP
+
+```
+/cf status smarterprop.cl
+```
+
+---
+
+## 🎯 PRÓXIMOS PASOS
+
+### Inmediatos
+
+1. ⏳ **Obtener Cloudflare API Token** - Cloudflare Dashboard
+2. ⏳ **Configurar en Vault** - Supabase
+3. ⏳ **Listar zonas** - /cf dns zones
+4. ⏳ **Crear DNS records** - A, CNAME, TXT, MX
+
+### Corto Plazo
+
+5. ⏳ **Configurar Page Rules** - Redirects
+6. ⏳ **Configurar Workers** - Serverless
+7. ⏳ **Configurar SSL/TLS** - Full (Strict)
+8. ⏳ **Configurar Cache** - Rules
+
+---
+
+## 📊 ESTADO DE CONFIGURACIÓN
+
+| Dominio | Estado | DNS Records | SSL | Proxy |
+|---------|--------|-------------|-----|-------|
+| **smarterprop.cl** | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| **it.smarterprop.cl** | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| **tienda.smarterbot.cl** | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+
+---
+
+## 🎩🕹️🏎️💨🚀
+
+```
+╔══════════════════════════════════════════════╗
+║  🌐 CLOUDFLARE DNS - LISTO                   ║
+╠══════════════════════════════════════════════╣
+║  ESTADO: Pendiente API Token                 ║
+║  DOCUMENTACIÓN: Completa                     ║
+║  DOMINIOS: 3 principales                     ║
+║  SUBDOMINIOS: 5 adicionales                  ║
+╠══════════════════════════════════════════════╣
+║  PRÓXIMO:                                    ║
+║  1. Obtener API Token de Cloudflare          ║
+║  2. Configurar en Supabase Vault             ║
+║  3. Crear DNS records                        ║
+║  4. Verificar propagación                    ║
+╚══════════════════════════════════════════════╝
+
+La configuración está lista.
+Falta API Token de Cloudflare.
+Seguimos autónomos.
+```
+
+---
+
+**ESTADO:** ⏳ **DOCUMENTACIÓN CREADA - PENDIENTE API TOKEN**

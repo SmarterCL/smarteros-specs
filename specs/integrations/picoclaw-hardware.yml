@@ -1,0 +1,262 @@
+# 🤖 PICOCLAW HARDWARE TEST - SmarterOS v3.0
+
+**Versión:** 1.0.0  
+**Fecha:** 2026-03-06  
+**Estado:** Pendiente de conexión física  
+**Baud Rate:** 115200
+
+---
+
+## 📋 DESCRIPCIÓN
+
+PicoClaw es el sistema de hardware industrial para telemetría y control de equipos. Conecta placas USB-Serial para monitorear voltaje, RPM y temperatura en tiempo real.
+
+---
+
+## 🏗️ ARQUITECTURA
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PICOCLAW HARDWARE                                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Hardware Físico                                                │
+│  ├── Placa 1: Voltaje (USB-Serial)                              │
+│  ├── Placa 2: RPM (USB-Serial)                                  │
+│  └── Placa 3: Temperatura (USB-Serial)                          │
+│                                                                 │
+│  Conexión                                                       │
+│  ├── Puerto: /dev/cu.usbserial-1, 2, 3                          │
+│  ├── Baud Rate: 115200                                          │
+│  ├── Data Bits: 8                                               │
+│  ├── Parity: None                                               │
+│  ├── Stop Bits: 1                                               │
+│  └── Flow Control: None                                         │
+│                                                                 │
+│  Software                                                       │
+│  ├── Node.js SerialPort                                         │
+│  ├── MQTT Publisher                                             │
+│  ├── InfluxDB Writer                                            │
+│  └── Grafana Dashboard                                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 REQUISITOS DE HARDWARE
+
+### Placas USB-Serial
+
+| Componente | Especificación | Cantidad |
+|------------|----------------|----------|
+| **Chip** | FTDI FT232RL o CP2102 | 3 |
+| **Voltaje** | 3.3V / 5V seleccionable | 3 |
+| **TX/RX** | LEDs indicadores | 3 |
+| **Cable USB** | USB-A a Micro-USB | 3 |
+
+### Sensores
+
+| Sensor | Tipo | Rango | Placa |
+|--------|------|-------|-------|
+| **Voltaje** | AC 0-250V | 0-5V DC | Placa 1 |
+| **RPM** | Hall Effect | 0-10000 RPM | Placa 2 |
+| **Temperatura** | DS18B20 | -55°C a 125°C | Placa 3 |
+
+---
+
+## 🔧 CONEXIÓN FÍSICA
+
+### Paso 1: Instalar Drivers
+
+```bash
+# macOS (Homebrew)
+brew install libusb
+
+# FTDI Drivers
+# Descargar de: https://ftdichip.com/drivers/vcp-drivers/
+
+# CP210x Drivers
+# Descargar de: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
+```
+
+### Paso 2: Conectar Placas
+
+```
+1. Conectar Placa 1 (Voltaje) → USB Port 1
+2. Conectar Placa 2 (RPM) → USB Port 2
+3. Conectar Placa 3 (Temperatura) → USB Port 4
+```
+
+### Paso 3: Verificar Puertos
+
+```bash
+# macOS
+ls -la /dev/cu.usbserial*
+# Esperado:
+# /dev/cu.usbserial-1
+# /dev/cu.usbserial-2
+# /dev/cu.usbserial-3
+
+# Linux
+ls -la /dev/ttyUSB*
+# Esperado:
+# /dev/ttyUSB0
+# /dev/ttyUSB1
+# /dev/ttyUSB2
+```
+
+### Paso 4: Verificar Permisos
+
+```bash
+# macOS (generalmente no requiere permisos especiales)
+ls -l /dev/cu.usbserial-1
+
+# Linux (agregar usuario al grupo dialout)
+sudo usermod -a -G dialout $USER
+sudo chmod 666 /dev/ttyUSB0
+```
+
+---
+
+## 🧪 TEST DE CONEXIÓN
+
+### 1. Hardware Test Script
+
+```bash
+cd /Users/mac/webcontrol.smarterbot.cl/tests
+node picoclaw-hardware-test.js
+```
+
+**Output esperado:**
+```
+✅ Placa 1 (Voltaje): /dev/cu.usbserial-1 - CONNECTED
+✅ Placa 2 (RPM): /dev/cu.usbserial-2 - CONNECTED
+✅ Placa 3 (Temperatura): /dev/cu.usbserial-3 - CONNECTED
+
+Conectadas: 3/3
+```
+
+### 2. Serial Read Test
+
+```bash
+# Leer datos seriales
+screen /dev/cu.usbserial-1 115200
+
+# O con node
+node -e "
+const SerialPort = require('serialport');
+const port = new SerialPort('/dev/cu.usbserial-1', { baudRate: 115200 });
+port.on('data', data => console.log(data.toString()));
+"
+```
+
+### 3. MQTT Test
+
+```bash
+# Suscribirse a topic MQTT
+mosquitto_sub -h localhost -t "picoclaw/telemetry/#" -v
+
+# Esperado:
+# picoclaw/telemetry/voltaje {"placa_id":1,"valor":220.5,"timestamp":"2026-03-06T12:00:00Z"}
+# picoclaw/telemetry/rpm {"placa_id":2,"valor":1500.0,"timestamp":"2026-03-06T12:00:00Z"}
+# picoclaw/telemetry/temp {"placa_id":3,"valor":45.2,"timestamp":"2026-03-06T12:00:00Z"}
+```
+
+---
+
+## 📱 COMANDOS DE TELEGRAM
+
+```
+@smarterbot
+
+/picoclaw status - Estado de PicoClaw
+/picoclaw telemetry - Telemetría en tiempo real
+/picoclaw placas - Listar placas conectadas
+/picoclaw alerts - Alertas activas
+/picoclaw connect - Conectar placas
+/picoclaw grafana - Dashboard en Grafana
+```
+
+---
+
+## 📊 GRAFANA DASHBOARD
+
+### Data Source: InfluxDB
+
+```
+URL: http://localhost:8086
+Bucket: picoclaw_telemetry
+Org: smarteros
+Token: tu_token_aqui
+```
+
+### Paneles
+
+| Panel | Tipo | Query |
+|-------|------|-------|
+| **Voltaje Actual** | Gauge | `SELECT last("valor") FROM "voltaje"` |
+| **RPM Actual** | Gauge | `SELECT last("valor") FROM "rpm"` |
+| **Temperatura Actual** | Gauge | `SELECT last("valor") FROM "temperatura"` |
+| **Histórico** | Graph | `SELECT mean("valor") FROM * WHERE $timeFilter GROUP BY time(5m)` |
+| **Alertas** | Table | `SELECT * FROM "alerts" WHERE "estado" = 'activa'` |
+
+---
+
+## 🎯 PRÓXIMOS PASOS
+
+### Inmediatos
+
+1. ⏳ **Conectar Placas USB** - Hardware físico
+2. ⏳ **Verificar Puertos** - ls /dev/cu.usbserial*
+3. ⏳ **Testear Conexión** - node picoclaw-hardware-test.js
+4. ⏳ **Leer Telemetría** - screen /dev/cu.usbserial-1 115200
+
+### Corto Plazo
+
+5. ⏳ **Configurar MQTT** - Eclipse Mosquitto
+6. ⏳ **Configurar InfluxDB** - Time-series DB
+7. ⏳ **Configurar Grafana** - Dashboards
+8. ⏳ **Configurar Alertas** - Telegram notifications
+
+---
+
+## 📊 ESTADO DE HARDWARE
+
+| Componente | Estado | Observaciones |
+|------------|--------|---------------|
+| **Placas USB-Serial** | ⏳ Pendiente | Conectar físicamente |
+| **Puertos COM** | ⏳ Pendiente | Verificar con ls |
+| **Baud Rate 115200** | ⏳ Pendiente | Configurar |
+| **MQTT** | ⏳ Pendiente | Instalar Mosquitto |
+| **InfluxDB** | ⏳ Pendiente | Instalar DB |
+| **Grafana** | ⏳ Pendiente | Configurar dashboard |
+
+---
+
+## 🎩🕹️🏎️💨🚀
+
+```
+╔══════════════════════════════════════════════╗
+║  🤖 PICOCLAW HARDWARE - LISTO                ║
+╠══════════════════════════════════════════════╣
+║  ESTADO: Pendiente conexión física           ║
+║  DOCUMENTACIÓN: Completa                     ║
+║  BAUD RATE: 115200                           ║
+║  PUERTOS: /dev/cu.usbserial-1/2/3            ║
+╠══════════════════════════════════════════════╣
+║  PRÓXIMO:                                    ║
+║  1. Conectar placas USB                      ║
+║  2. Verificar puertos                        ║
+║  3. Testear telemetría                       ║
+║  4. Configurar MQTT/InfluxDB                 ║
+╚══════════════════════════════════════════════╝
+
+El software está listo.
+Falta conectar hardware.
+Seguimos autónomos.
+```
+
+---
+
+**ESTADO:** ⏳ **DOCUMENTACIÓN CREADA - PENDIENTE HARDWARE**

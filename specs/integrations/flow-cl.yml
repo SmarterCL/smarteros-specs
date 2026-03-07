@@ -1,0 +1,302 @@
+# 💳 FLOW.CL INTEGRATION - SmarterOS v3.0
+
+**Versión:** 1.0.0  
+**Fecha:** 2026-03-06  
+**Estado:** Pendiente de API Keys  
+**Ambiente:** Producción
+
+---
+
+## 📋 DESCRIPCIÓN
+
+Flow.cl es la pasarela de pagos principal para SmarterOS en Chile. Procesa pagos en CLP mediante Webpay Plus, Webpay One Click, y otras modalidades.
+
+---
+
+## 🔐 CREDENTIALS REQUERIDAS
+
+### Producción
+
+```bash
+FLOW_API_KEY="tu_api_key_de_produccion"
+FLOW_SECRET_KEY="tu_secret_key_de_produccion"
+FLOW_COMMERCE_ID="tu_commerce_id"
+```
+
+### Test (Certificación)
+
+```bash
+FLOW_API_KEY_TEST="tu_api_key_de_test"
+FLOW_SECRET_KEY_TEST="tu_secret_key_de_test"
+FLOW_COMMERCE_ID_TEST="tu_commerce_id_test"
+```
+
+---
+
+## 🏗️ ARQUITECTURA
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FLOW.CL INTEGRATION                                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Tienda Odoo → Flow.cl API → Webpay                            │
+│       │                      │                                  │
+│       │                      ▼                                  │
+│       │              ┌──────────────┐                           │
+│       │              │  Cliente     │                           │
+│       │              │  Ingresa     │                           │
+│       │              │  Tarjeta     │                           │
+│       │              └──────────────┘                           │
+│       │                      │                                  │
+│       │                      ▼                                  │
+│       │              Flow.cl Procesa                            │
+│       │                      │                                  │
+│       │                      ▼                                  │
+│       └────── Webhook ← Payment Status                          │
+│              │                                                  │
+│              ▼                                                  │
+│         SmarterMCP                                              │
+│              │                                                  │
+│              ├──→ Odoo: Actualiza orden                         │
+│              ├──→ Telegram: Notifica                            │
+│              └──→ SII: Genera DTE                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 CONFIGURACIÓN
+
+### 1. Obtener API Keys
+
+**URL:** https://flow.cl/admin
+
+```
+1. Iniciar sesión en Flow.cl Admin
+2. Ir a: Integración → API Keys
+3. Copiar:
+   • API Key
+   • Secret Key
+   • Commerce ID
+4. Guardar en lugar seguro
+```
+
+### 2. Configurar en Supabase Vault
+
+```sql
+-- Insertar en Vault
+INSERT INTO vault.secrets (name, secret)
+VALUES 
+  ('flow_api_key', 'tu_api_key_aqui'),
+  ('flow_secret_key', 'tu_secret_key_aqui'),
+  ('flow_commerce_id', 'tu_commerce_id_aqui');
+```
+
+### 3. Configurar en .env
+
+```bash
+# .env.local o .env.production
+FLOW_API_KEY="tu_api_key_aqui"
+FLOW_SECRET_KEY="tu_secret_key_aqui"
+FLOW_COMMERCE_ID="tu_commerce_id_aqui"
+FLOW_ENV="production"  # o "test"
+```
+
+### 4. Configurar Webhook en Flow.cl
+
+**URL:** https://flow.cl/admin/webhooks
+
+```
+1. Ir a: Webhooks → Nuevo Webhook
+2. Configurar:
+   • URL: https://smarterbot.cl/flow/webhook
+   • Eventos: payment.created, payment.updated, payment.reversed
+   • Método: POST
+   • Content-Type: application/json
+3. Guardar
+4. Copiar Secret de Webhook
+```
+
+---
+
+## 📡 ENDPOINTS
+
+### Flow.cl API
+
+```
+Base URL (Producción): https://www.flow.cl/api
+Base URL (Test): https://sandbox.flow.cl/api
+
+Endpoints:
+  POST /v1/payment/create     - Crear pago
+  GET  /v1/payment/get/:id    - Obtener pago
+  POST /v1/payment/refund     - Reembolsar
+  GET  /v1/commerce/balance   - Obtener saldo
+```
+
+### Webhook Handler (SmarterOS)
+
+```
+POST /flow/webhook
+  • Valida firma
+  • Procesa payment
+  • Actualiza Odoo
+  • Notifica Telegram
+  • Genera DTE
+
+GET /flow/webhook/status
+  • Estado del webhook
+  • Últimos eventos
+```
+
+---
+
+## 🧪 TEST DE INTEGRACIÓN
+
+### 1. Crear Pago de Prueba
+
+```bash
+curl -X POST http://localhost:3061/flow/create-payment \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 10000,
+    "email": "test@example.com",
+    "subject": "Pago de prueba",
+    "currency": "CLP"
+  }'
+```
+
+### 2. Simular Webhook
+
+```bash
+curl -X POST http://localhost:3061/flow/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "test-token-123",
+    "status": "APPROVED",
+    "amount": 10000,
+    "currency": "CLP",
+    "buyer_email": "test@example.com",
+    "external_id": "ORDER-TEST-001"
+  }'
+```
+
+### 3. Verificar en Telegram
+
+```
+@smarterbot
+
+Debería llegar:
+💰 Pago Aprobado
+
+Orden: ORDER-TEST-001
+Monto: $10.000 CLP
+Flow Token: test-token-123
+Estado: ✅ Aprobado
+```
+
+---
+
+## 📱 COMANDOS DE TELEGRAM
+
+```
+@smarterbot
+
+/flow status - Estado de Flow.cl
+/flow pagos list - Listar pagos
+/flow pago <id> - Detalles de pago
+/flow webhook status - Estado del webhook
+/flow ciclo - Ciclo completo de prueba
+```
+
+---
+
+## 🔗 INTEGRACIÓN CON ODOO
+
+### Crear Orden de Venta
+
+```javascript
+// Cuando Flow.cl confirma pago
+POST /odoo/create-sale
+{
+  "flow_token": "abc123",
+  "amount": 10000,
+  "email": "cliente@example.com",
+  "items": [
+    {"product": "Canasta Premium", "qty": 1, "price": 10000}
+  ]
+}
+```
+
+### Generar DTE (SII)
+
+```javascript
+// Después de crear venta
+POST /odoo/generate-dte
+{
+  "sale_id": "SO-2026-00123",
+  "dte_type": 39,  // 39=Boleta, 33=Factura
+  "sii_env": "certificacion"  // o "produccion"
+}
+```
+
+---
+
+## 🎯 PRÓXIMOS PASOS
+
+### Inmediatos
+
+1. ⏳ **Obtener API Keys** - Flow.cl Admin
+2. ⏳ **Configurar en Vault** - Supabase
+3. ⏳ **Configurar Webhook** - Flow.cl Admin
+4. ⏳ **Testear en Test Mode** - Sandbox
+
+### Corto Plazo
+
+5. ⏳ **Certificación SII** - Set de pruebas
+6. ⏳ **Pasar a Producción** - API Keys reales
+7. ⏳ **Monitoreo** - Grafana dashboards
+8. ⏳ **Alertas** - Telegram notifications
+
+---
+
+## 📊 ESTADO DE INTEGRACIÓN
+
+| Componente | Estado | Observaciones |
+|------------|--------|---------------|
+| **API Keys** | ⏳ Pendiente | Obtener de Flow.cl Admin |
+| **Webhook URL** | ⏳ Pendiente | Configurar en Flow.cl |
+| **Test Mode** | ⏳ Pendiente | Sandbox disponible |
+| **Producción** | ⏳ Pendiente | Requiere certificación |
+| **SII Integration** | ⏳ Pendiente | Set de pruebas |
+
+---
+
+## 🎩🕹️🏎️💨🚀
+
+```
+╔══════════════════════════════════════════════╗
+║  💳 FLOW.CL INTEGRATION - LISTA              ║
+╠══════════════════════════════════════════════╣
+║  ESTADO: Pendiente de API Keys               ║
+║  DOCUMENTACIÓN: Completa                     ║
+║  ENDPOINTS: Definidos                        ║
+║  WEBHOOK: Handler listo                      ║
+╠══════════════════════════════════════════════╣
+║  PRÓXIMO:                                    ║
+║  1. Obtener API Keys de Flow.cl              ║
+║  2. Configurar en Supabase Vault             ║
+║  3. Configurar Webhook en Flow.cl            ║
+║  4. Testear en Sandbox                       ║
+╚══════════════════════════════════════════════╝
+
+La integración está lista.
+Faltan API Keys reales.
+Seguimos autónomos.
+```
+
+---
+
+**ESTADO:** ⏳ **DOCUMENTACIÓN CREADA - PENDIENTE API KEYS**
