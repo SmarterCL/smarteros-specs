@@ -1,0 +1,367 @@
+# 🤖 MLX + OPENCLAW - IA LOCAL PARA MAC INTELLIGENT
+
+**Versión:** 1.0.0  
+**Fecha:** 2026-03-06  
+**Hardware:** Mac Air 2017 (Intel)  
+**Framework:** MLX (Apple Silicon) / Ollama (Intel)
+
+---
+
+## ⚠️ NOTA IMPORTANTE: MAC INTEL vs APPLE SILICON
+
+### MLX Framework (Apple Silicon Only)
+
+```
+❌ NO DISPONIBLE en Mac Intel 2017
+✅ Disponible en: M1, M2, M3 (2020+)
+
+MLX usa el Neural Engine (NPU) de Apple Silicon.
+Mac Intel usa CPU + GPU Intel Iris.
+```
+
+### Alternativa para Mac Intel: Ollama
+
+```
+✅ Ollama con Llama 3.1 8B
+✅ Usa CPU + GPU Intel
+✅ Corre localmente sin nube
+✅ Compatible con MCP Agents
+```
+
+---
+
+## 🏗️ ARQUITECTURA DE IA LOCAL
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  MAC INTELLIGENT - IA LOCAL                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Ollama (CPU + GPU Intel)                                       │
+│  ├── Llama 3.1 8B (4-bit quantized)                             │
+│  ├── Mistral 7B (opcional)                                      │
+│  └── Phi-3 Mini (opcional)                                      │
+│                                                                 │
+│  n8n (Docker)                                                   │
+│  ├── Workflows de automatización                                │
+│  ├── Integración con Ollama                                     │
+│  ├── Webhooks de Telegram                                       │
+│  └── Trigger de MCP Agents                                      │
+│                                                                 │
+│  FastAPI                                                        │
+│  ├── API REST para IA                                           │
+│  ├── Proxy a Ollama                                             │
+│  └── Rate limiting                                              │
+│                                                                 │
+│  MCP Agents (8)                                                 │
+│  ├── Session Manager (3050)                                     │
+│  ├── Cloudflare (3052)                                          │
+│  ├── GitHub (3053)                                              │
+│  ├── MercadoPago (3054)                                         │
+│  ├── Flow.cl (3055)                                             │
+│  ├── Odoo (3057)                                                │
+│  └── PicoClaw (3059)                                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 INSTALACIÓN DE OLLAMA
+
+### Paso 1: Instalar Ollama
+
+```bash
+# Descargar e instalar
+curl -fsSL https://ollama.com/install.sh | sh
+
+# O con Homebrew
+brew install ollama
+```
+
+### Paso 2: Iniciar Ollama
+
+```bash
+# Iniciar servicio
+ollama serve &
+
+# Verificar
+ollama list
+```
+
+### Paso 3: Descargar Modelos
+
+```bash
+# Llama 3.1 8B (Recomendado)
+ollama pull llama3.1:8b
+
+# Mistral 7B (Alternativa liviana)
+ollama pull mistral:7b
+
+# Phi-3 Mini (Muy liviano)
+ollama pull phi3:mini
+```
+
+### Paso 4: Verificar GPU
+
+```bash
+# Verificar uso de GPU
+ollama run llama3.1:8b "Hola, ¿me escuchas?"
+
+# Monitor de Actividad → GPU
+# Deberías ver "Intel Iris Plus Graphics" activa
+```
+
+---
+
+## 🐳 DOCKER COMPOSE - N8N + OLLAMA
+
+```yaml
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n-smarteros
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-smarteros
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - smarteros-net
+    # Nota: En Mac Intel, mejor correr Ollama nativo (no Docker)
+    # para mejor acceso a GPU Intel
+
+volumes:
+  n8n_data:
+  ollama_data:
+
+networks:
+  smarteros-net:
+    driver: bridge
+```
+
+---
+
+## 🔗 INTEGRACIÓN N8N + OLLAMA
+
+### Workflow n8n: Procesar con IA Local
+
+```json
+{
+  "name": "IA Local con Ollama",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ia-local"
+      }
+    },
+    {
+      "name": "HTTP Request a Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "body": {
+          "model": "llama3.1:8b",
+          "prompt": "={{ $json.body.prompt }}",
+          "stream": false
+        }
+      }
+    },
+    {
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 📱 CONEXIÓN DESDE TERMUX (RED LOCAL)
+
+### Paso 1: Obtener IP Local del Mac
+
+```bash
+# En Mac
+ipconfig getifaddr en0
+# Ejemplo: 192.168.1.100
+```
+
+### Paso 2: Configurar Ollama para escuchar en red
+
+```bash
+# En Mac
+launchctl setenv OLLAMA_HOST "0.0.0.0:11434"
+
+# Reiniciar Ollama
+ollama serve
+```
+
+### Paso 3: Script Termux
+
+```bash
+#!/data/data/com.termux/files/usr/bin/bash
+# ollama-termux.sh
+
+MAC_LOCAL_IP="192.168.1.100"  # Tu IP local del Mac
+OLLAMA_PORT="11434"
+
+echo "🤖 Consultando IA Local en Mac..."
+curl -X POST "http://$MAC_LOCAL_IP:$OLLAMA_PORT/api/generate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3.1:8b",
+    "prompt": "¿Cuál es el estado del sistema SmarterOS?",
+    "stream": false
+  }' | jq '.response'
+```
+
+---
+
+## 🧪 TEST DE IA LOCAL
+
+### Test 1: Ollama Directo
+
+```bash
+# Ejecutar modelo
+ollama run llama3.1:8b "Explica qué es SmarterOS en 2 frases"
+
+# Output esperado:
+# SmarterOS es un sistema operativo inteligente que integra...
+```
+
+### Test 2: n8n Webhook
+
+```bash
+# Enviar webhook a n8n
+curl -X POST http://localhost:5678/webhook/ia-local \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "¿Qué es PicoClaw?"}'
+
+# Output esperado:
+# {"response": "PicoClaw es un sistema de hardware industrial..."}
+```
+
+### Test 3: MCP Agent con IA
+
+```bash
+# MCP Session con IA
+curl http://localhost:3050/mcp/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Analiza las ventas de hoy",
+    "model": "llama3.1:8b"
+  }'
+```
+
+---
+
+## 📊 MONITOR DE ACTIVIDAD (DEMO TIP)
+
+### Verificar Uso de GPU Intel
+
+```
+1. Abrir: Monitor de Actividad (Activity Monitor)
+2. Ir a: Ventana → Historial de GPU
+3. Ejecutar: ollama run llama3.1:8b "Hola"
+4. Ver: Intel Iris Plus Graphics activa
+
+💡 Tip para Demo:
+   - Mostrar GPU antes de ejecutar IA (plano)
+   - Ejecutar consulta IA
+   - Mostrar GPU activándose (picos de uso)
+   - Explicar: "IA local, sin nube, soberana"
+```
+
+---
+
+## 🎯 PRÓXIMOS PASOS
+
+### Inmediatos
+
+1. ⏳ **Instalar Ollama** - `brew install ollama`
+2. ⏳ **Descargar Llama 3.1** - `ollama pull llama3.1:8b`
+3. ⏳ **Iniciar n8n Docker** - `docker compose up -d n8n`
+4. ⏳ **Configurar red local** - `OLLAMA_HOST=0.0.0.0`
+
+### Corto Plazo
+
+5. ⏳ **Crear workflows n8n** - IA + MCP Agents
+6. ⏳ **Configurar Termux** - Conexión red local
+7. ⏳ **Testear GPU Intel** - Monitor de Actividad
+8. ⏳ **Demo en vivo** - Mostrar NPU/GPU activa
+
+---
+
+## 🎩🕹️🏎️💨🚀
+
+```
+╔══════════════════════════════════════════════╗
+║  🤖 MLX + OPENCLAW - MAC INTELLIGENT         ║
+╠══════════════════════════════════════════════╣
+║  HARDWARE: Mac Air 2017 (Intel)              ║
+║  FRAMEWORK: Ollama (MLX no disponible)       ║
+║  MODELO: Llama 3.1 8B                        ║
+║  GPU: Intel Iris Plus Graphics               ║
+╠══════════════════════════════════════════════╣
+║  INSTALACIÓN:                                ║
+║  1. brew install ollama                      ║
+║  2. ollama pull llama3.1:8b                  ║
+║  3. docker compose up -d n8n                 ║
+║  4. OLLAMA_HOST=0.0.0.0                      ║
+╠══════════════════════════════════════════════╣
+║  DEMO TIP:                                   ║
+║  Abrir Monitor de Actividad → GPU            ║
+║  Mostrar GPU activándose con IA              ║
+║  "IA local soberana, sin nube"               ║
+╚══════════════════════════════════════════════╝
+
+La IA local está lista.
+Ollama corre en Intel.
+n8n automatiza.
+La Red trabaja.
+YOSI arquitecto.
+```
+
+---
+
+## 📞 UBICACIÓN
+
+**Spec:** `specs/integrations/mlx-openclaw-mac-intel.yml`  
+**Script:** `deploy/ollama-setup.sh`  
+**Docker:** `docker-compose.ollama-n8n.yml`
+
+---
+
+**ESTADO:** ⏳ **DOCUMENTACIÓN CREADA - PENDIENTE INSTALACIÓN**
