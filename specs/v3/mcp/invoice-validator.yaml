@@ -1,0 +1,22 @@
+id: mcp.agent.invoice-validator
+version: 3.0
+status: stable
+inputs:
+  - name: invoice
+    type: document
+    required: true
+  - name: validation_rules
+    type: array
+    required: false
+outputs:
+  - name: validation_result
+    type: object
+  - name: error_code
+    type: string
+rules:
+  - must_have_rut
+  - total_consistency
+failure_modes:
+  - missing_field
+  - invalid_format
+description: "Validador de facturas electrónicas para el sistema MCP"

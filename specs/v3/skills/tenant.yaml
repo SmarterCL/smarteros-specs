@@ -1,0 +1,95 @@
+# specs/tenant/tenant.yaml
+# OpenSpec for Tenant entity
+entity: tenant
+description: "Tenant entity for multi-tenant isolation in SmarterOS platform"
+tenant_isolated: false
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique tenant identifier"
+  name:
+    type: string
+    required: true
+    description: "Tenant name"
+  rut:
+    type: string
+    required: true
+    unique: true
+    description: "Chilean tax identification number"
+  whatsapp:
+    type: string
+    required: false
+    description: "Tenant WhatsApp number"
+  email:
+    type: string
+    required: false
+    description: "Tenant contact email"
+  status:
+    type: string
+    required: true
+    default: "active"
+    enum: ["active", "inactive", "suspended", "demo"]
+    description: "Tenant status"
+  plan:
+    type: string
+    required: true
+    default: "basic"
+    enum: ["demo", "basic", "pro", "enterprise"]
+    description: "Tenant subscription plan"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Tenant creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  settings:
+    type: object
+    required: false
+    description: "Tenant-specific settings"
+events:
+  created:
+    description: "Triggered when a tenant is created"
+    payload:
+      - tenant_id
+      - rut
+      - name
+  activated:
+    description: "Triggered when a tenant is activated"
+    payload:
+      - tenant_id
+      - plan
+  deactivated:
+    description: "Triggered when a tenant is deactivated"
+    payload:
+      - tenant_id
+      - reason
+  plan_changed:
+    description: "Triggered when a tenant's plan changes"
+    payload:
+      - tenant_id
+      - old_plan
+      - new_plan
+validation:
+  rules:
+    - field: rut
+      type: chilean_rut
+      required: true
+    - field: whatsapp
+      type: phone_e164
+      required: false
+    - field: email
+      type: email
+      required: false
+relationships:
+  customers:
+    type: one-to-many
+    entity: customer
+    foreign_key: tenant_id
+  orders:
+    type: one-to-many
+    entity: order
+    foreign_key: tenant_id

@@ -1,0 +1,148 @@
+# specs/mcp/scout.v2.yaml
+# OpenSpec v2 for Scout entity with multimodal support
+entity: multimodal_scout
+description: "Multimodal Scout for data ingestion and analysis with GLM-4.6V capabilities"
+tenant_isolated: true
+fields:
+  id:
+    type: string
+    required: true
+    primary: true
+    description: "Unique scout identifier"
+  name:
+    type: string
+    required: true
+    description: "Scout name"
+  source_type:
+    type: string
+    required: true
+    enum: ["email", "whatsapp", "web", "api", "document", "image", "social", "chat", "form"]
+    description: "Type of source the scout monitors"
+  ai_model:
+    type: string
+    required: false
+    default: "glm-4.6v"
+    description: "AI model used for analysis"
+  content_filter:
+    type: object
+    required: false
+    description: "Filter criteria for content ingestion"
+  ai_enabled:
+    type: boolean
+    required: true
+    default: true
+    description: "Whether AI analysis is enabled"
+  auto_process:
+    type: boolean
+    required: true
+    default: true
+    description: "Whether to auto-process ingested content"
+  config:
+    type: object
+    required: true
+    description: "Scout configuration parameters"
+  enabled:
+    type: boolean
+    required: true
+    default: true
+    description: "Whether the scout is enabled"
+  created_at:
+    type: timestamp
+    required: true
+    description: "Scout creation timestamp"
+  updated_at:
+    type: timestamp
+    required: true
+    description: "Last update timestamp"
+  last_run:
+    type: timestamp
+    required: false
+    description: "Last time scout was executed"
+  tenant_id:
+    type: string
+    required: true
+    description: "Tenant identifier for multi-tenant isolation"
+ingestion:
+  multimodal:
+    enabled: true
+    supported_types: ["text", "image", "document", "url", "email", "audio", "video"]
+    ai_processors:
+      - type: "image"
+        action: "visual_content_identification"
+        ai_model: "glm-4.6v"
+      - type: "document"
+        action: "structured_data_extraction"
+        ai_model: "glm-4.6v"
+      - type: "email"
+        action: "intent_classification"
+        ai_model: "glm-4.6v"
+      - type: "url"
+        action: "content_summarization"
+        ai_model: "glm-4.6v"
+      - type: "text"
+        action: "sentiment_analysis"
+        ai_model: "glm-4.6v"
+      - type: "audio"
+        action: "speech_to_text_and_analysis"
+        ai_model: "glm-4.6v"
+      - type: "video"
+        action: "object_and_speech_analysis"
+        ai_model: "glm-4.6v"
+events:
+  started:
+    description: "Triggered when scout starts monitoring"
+    payload:
+      - scout_id
+      - config
+      - tenant_id
+  content_found:
+    description: "Triggered when scout finds new content"
+    payload:
+      - scout_id
+      - content_type
+      - content_source
+      - content_url
+      - tenant_id
+  ai_analyzing:
+    description: "Triggered when AI analysis begins"
+    payload:
+      - scout_id
+      - ai_model
+      - content_type
+      - tenant_id
+  ai_completed:
+    description: "Triggered when AI analysis completes"
+    payload:
+      - scout_id
+      - analysis_result
+      - confidence_level
+      - tenant_id
+  processed:
+    description: "Triggered when content is processed"
+    payload:
+      - scout_id
+      - result
+      - tenant_id
+  failed:
+    description: "Triggered when scout processing fails"
+    payload:
+      - scout_id
+      - error
+      - tenant_id
+validation:
+  rules:
+    - field: source_type
+      type: enum
+      values: ["email", "whatsapp", "web", "api", "document", "image", "social", "chat", "form"]
+      required: true
+    - field: content_filter
+      type: object
+      required: false
+    - field: config
+      type: object
+      required: true
+relationships:
+  tenant:
+    type: many-to-one
+    entity: tenant
+    foreign_key: tenant_id

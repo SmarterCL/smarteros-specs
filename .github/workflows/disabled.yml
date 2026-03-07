@@ -1,0 +1,13 @@
+# Workflow para indicar que GitHub Actions está deshabilitado intencionalmente
+
+name: Disabled Workflow
+on: [push, pull_request]
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Actions Disabled
+        run: |
+          echo "GitHub Actions está deshabilitado intencionalmente para este repositorio."
+          echo "El sistema MCP utiliza mcp-runner para ejecución local de especificaciones."
+          echo "Para más información, ver GITHUB-ACTIONS-POLICY.md"

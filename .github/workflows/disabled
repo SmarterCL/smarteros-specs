@@ -1,0 +1,5 @@
+# Deshabilitar GitHub Actions
+
+Esto deshabilita todos los workflows de GitHub Actions en este repositorio.
+
+Para habilitarlos nuevamente, simplemente borra este archivo.

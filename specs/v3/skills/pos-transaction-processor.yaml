@@ -1,0 +1,24 @@
+id: mcp.skill.pos-transaction-processor
+version: 3.0
+status: stable
+inputs:
+  - name: transaction
+    type: object
+    required: true
+  - name: validation_rules
+    type: array
+    required: false
+outputs:
+  - name: processing_result
+    type: object
+  - name: transaction_id
+    type: string
+rules:
+  - validate_transaction_format
+  - check_amount_limits
+  - verify_payment_method
+failure_modes:
+  - invalid_transaction_format
+  - amount_exceeds_limit
+  - invalid_payment_method
+description: "Procesador de transacciones POS QR para el sistema MCP"

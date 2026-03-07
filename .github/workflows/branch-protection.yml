@@ -1,0 +1,56 @@
+name: branch-protection
+about: Protect main branch from force pushes and ensure quality checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  pull_request_review:
+    branches: [ main ]
+
+jobs:
+  enforce-branch-protection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate spec changes
+        run: |
+          if [[ -n "$(git diff HEAD~1 --name-only | grep -E '\.(yaml|yml|json|sql)$')" ]]; then
+            echo "Validating spec files..."
+            # Validate OpenSpec files
+            find . -name "*.yaml" -o -name "*.yml" | xargs grep -l "OpenSpec\|apiVersion" | while read file; do
+              echo "Validating $file..."
+              # Basic validation - check if file has proper structure
+              if ! yq eval '.' "$file" >/dev/null 2>&1; then
+                echo "ERROR: Invalid YAML in $file"
+                exit 1
+              fi
+            done
+          fi
+
+      - name: Check for OpenSpec compliance
+        run: |
+          # Ensure any new spec files follow OpenSpec v2 standards
+          new_specs=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(yaml|yml)$' | xargs grep -l "OpenSpec\|apiVersion" 2>/dev/null || true)
+          if [[ -n "$new_specs" ]]; then
+            echo "Checking OpenSpec compliance for:"
+            echo "$new_specs"
+            for spec in $new_specs; do
+              # Ensure required fields exist
+              if ! grep -q "entity:" "$spec" && ! grep -q "kind:" "$spec"; then
+                echo "ERROR: $spec does not follow OpenSpec v2 format"
+                exit 1
+              fi
+            done
+          fi
+          
+      - name: Security scan
+        run: |
+          # Check for any sensitive information being committed
+          if git diff HEAD~1 --name-only | grep -E '\.(env|pem|key)$' || 
+             git diff HEAD~1 | grep -E "(password|secret|token|key).*=" | grep -v "#" | head -c 1000; then
+            echo "WARNING: Potential sensitive information detected"
+          fi

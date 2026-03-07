@@ -1,0 +1,29 @@
+{
+  "name": "smarteros-mcp",
+  "version": "1.0.0",
+  "description": "SmarterOS MCP - Motor de Ejecución Condicional",
+  "main": "dist/index.js",
+  "bin": {
+    "smartermcp": "./cli/smartermcp.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
+    "cli": "ts-node cli/smartermcp.ts"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@supabase/supabase-js": "^2.38.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "smarteros",
+    "mcp",
+    "automation",
+    "conditional-execution"
+  ],
+  "author": "SmarterOS Team",
+  "license": "MIT"
+}
