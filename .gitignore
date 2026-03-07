@@ -1,0 +1,25 @@
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+*.pem
+*.key
+credentials.json
+service-account.json
+
+# Build
+dist/
+build/
+node_modules/
