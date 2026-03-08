@@ -1,0 +1,202 @@
+version: '3.8'
+
+services:
+  # ═══════════════════════════════════════════════════════════
+  # SALES ENGINE API
+  # ═══════════════════════════════════════════════════════════
+  sales-engine:
+    build:
+      context: ./services/sales-engine
+      dockerfile: Dockerfile
+    container_name: smarteros-sales-engine
+    ports:
+      - "3080:3080"
+    environment:
+      - NODE_ENV=production
+      - SALES_ENGINE_PORT=3080
+      - IDENTITY_ENGINE_URL=http://identity-engine:3070
+      - PAYMENT_ENGINE_URL=http://payment-engine:3090
+    volumes:
+      - ./services/sales-engine:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ═══════════════════════════════════════════════════════════
+  # IDENTITY ENGINE (RUT Validation)
+  # ═══════════════════════════════════════════════════════════
+  identity-engine:
+    build:
+      context: ./services/identity-engine
+      dockerfile: Dockerfile
+    container_name: smarteros-identity-engine
+    ports:
+      - "3070:3070"
+    environment:
+      - NODE_ENV=production
+      - IDENTITY_PORT=3070
+    volumes:
+      - ./services/identity-engine:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3070/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ═══════════════════════════════════════════════════════════
+  # PAYMENT ENGINE (Flow.cl)
+  # ═══════════════════════════════════════════════════════════
+  payment-engine:
+    build:
+      context: ./services/payment-engine
+      dockerfile: Dockerfile
+    container_name: smarteros-payment-engine
+    ports:
+      - "3090:3090"
+    environment:
+      - NODE_ENV=production
+      - PAYMENT_ENGINE_PORT=3090
+      - FLOW_API_KEY=${FLOW_API_KEY}
+      - FLOW_SECRET_KEY=${FLOW_SECRET_KEY}
+    volumes:
+      - ./services/payment-engine:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ═══════════════════════════════════════════════════════════
+  # N8N WORKFLOW AUTOMATION
+  # ═══════════════════════════════════════════════════════════
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: smarteros-n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./n8n/data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Santiago
+      - TZ=America/Santiago
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    depends_on:
+      - sales-engine
+      - identity-engine
+      - payment-engine
+
+  # ═══════════════════════════════════════════════════════════
+  # POSTGRESQL (Supabase Local o DB Principal)
+  # ═══════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:15-alpine
+    container_name: smarteros-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=smarteros
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-smarteros_secure_password}
+      - POSTGRES_DB=smarteros
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smarteros"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════
+  # REDIS (Cache + Event Bus)
+  # ═══════════════════════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    container_name: smarteros-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════
+  # GRAFANA (Métricas y Dashboards)
+  # ═══════════════════════════════════════════════════════════
+  grafana:
+    image: grafana/grafana:latest
+    container_name: smarteros-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://grafana.smarterbot.cl
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+# ═══════════════════════════════════════════════════════════
+# NETWORKS
+# ═══════════════════════════════════════════════════════════
+networks:
+  smarteros-net:
+    driver: bridge
+    name: smarteros-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ═══════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  grafana_data:
+    driver: local
