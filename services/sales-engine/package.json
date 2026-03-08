@@ -1,0 +1,27 @@
+{
+  "name": "sales-engine-api",
+  "version": "1.0.0",
+  "description": "SmarterOS v5 Sales Engine API - Conversational Commerce",
+  "main": "api.js",
+  "scripts": {
+    "start": "node api.js",
+    "dev": "nodemon api.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "smarteros",
+    "sales-engine",
+    "conversational-commerce",
+    "chile",
+    "rut",
+    "flow-cl"
+  ],
+  "author": "SmarterOS Team",
+  "license": "MIT"
+}

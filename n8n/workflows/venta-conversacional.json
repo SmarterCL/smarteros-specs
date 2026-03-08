@@ -1,0 +1,429 @@
+[
+  {
+    "name": "SmarterOS v5 - Venta Conversacional Completa",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "venta-conversacional",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "webhook-chat",
+        "name": "Webhook (Chat)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Limpiar RUT del input\nconst rut = $input.first().json.rut || $input.first().json.body?.rut;\n\nfunction cleanRut(rut) {\n  if (!rut) return null;\n  return rut.toString()\n    .replace(/\\./g, '')\n    .replace(/-/g, '')\n    .replace(/\\s/g, '')\n    .toUpperCase();\n}\n\nreturn [{\n  json: {\n    rut: cleanRut(rut),\n    original_rut: rut\n  }\n}];"
+        },
+        "id": "clean-rut",
+        "name": "Function: Limpiar RUT",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [450, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:3080/identity/rut/validate",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "rut",
+                "value": "={{ $json.rut }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "validate-rut",
+        "name": "HTTP: Identity Engine",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [650, 300]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $json.valid }}",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "check-rut-valid",
+        "name": "IF: RUT Válido",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [850, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:3080/orders/create",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "rut",
+                "value": "={{ $json.rut }}"
+              },
+              {
+                "name": "items",
+                "value": "={{ $json.items || [] }}"
+              },
+              {
+                "name": "total",
+                "value": "={{ $json.total || 0 }}"
+              },
+              {
+                "name": "customer",
+                "value": "={{ $json.customer || {} }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "create-order",
+        "name": "HTTP: Order Engine",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [1050, 200]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:3080/payments/flow/create",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "order_id",
+                "value": "={{ $json.data.order_id }}"
+              },
+              {
+                "name": "amount",
+                "value": "={{ $json.data.total }}"
+              },
+              {
+                "name": "email",
+                "value": "={{ $json.customer.email || 'cliente@email.com' }}"
+              },
+              {
+                "name": "subject",
+                "value": "Pago orden {{ $json.data.order_id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "create-payment",
+        "name": "HTTP: Payment Engine",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [1250, 200]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $json.chat_webhook_url || 'https://api.telegram.org/botYOUR_BOT/sendMessage' }}",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "chat_id",
+                "value": "={{ $json.chat_id || '123456789' }}"
+              },
+              {
+                "name": "text",
+                "value": "✅ Orden creada: {{ $json.data.order_id }}\n\nMonto: ${{ $json.data.total.toLocaleString() }}\n\nLink de pago: {{ $json.data.payment_url }}\n\n¡Gracias por tu compra!"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "send-payment-link",
+        "name": "Send Payment Link",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [1450, 200]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $json.chat_webhook_url || 'https://api.telegram.org/botYOUR_BOT/sendMessage' }}",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "chat_id",
+                "value": "={{ $json.chat_id || '123456789' }}"
+              },
+              {
+                "name": "text",
+                "value": "❌ RUT inválido\n\nPor favor verifica tu RUT e inténtalo nuevamente.\n\nFormato correcto: 12.345.678-5"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "send-rut-invalid",
+        "name": "Send RUT Inválido",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [1050, 400]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "payments/flow/confirm",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "webhook-flow",
+        "name": "Webhook Flow.cl",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 600]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://localhost:3080/payments/flow/confirm",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "token",
+                "value": "={{ $json.token }}"
+              },
+              {
+                "name": "status",
+                "value": "={{ $json.status }}"
+              },
+              {
+                "name": "commerceOrder",
+                "value": "={{ $json.commerceOrder }}"
+              },
+              {
+                "name": "amount",
+                "value": "={{ $json.amount }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "confirm-payment",
+        "name": "HTTP: Confirm Payment",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [450, 600]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $json.chat_webhook_url || 'https://api.telegram.org/botYOUR_BOT/sendMessage' }}",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "chat_id",
+                "value": "={{ $json.chat_id || '123456789' }}"
+              },
+              {
+                "name": "text",
+                "value": "✅ ¡PAGO CONFIRMADO!\n\nOrden: {{ $json.order_id }}\nMonto: ${{ $json.amount.toLocaleString() }}\n\n¡Gracias por tu compra! Tu pedido está siendo procesado."
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "send-confirmation",
+        "name": "Send Confirmation",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [650, 600]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "{ \"success\": true, \"message\": \"Workflow completado\" }",
+          "options": {}
+        },
+        "id": "respond-success",
+        "name": "Respond Success",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [1650, 200]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "{ \"success\": true, \"message\": \"Confirmación recibida\" }",
+          "options": {}
+        },
+        "id": "respond-flow",
+        "name": "Respond Flow",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [850, 600]
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "Webhook (Chat)": {
+        "main": [
+          [
+            {
+              "node": "Function: Limpiar RUT",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Function: Limpiar RUT": {
+        "main": [
+          [
+            {
+              "node": "HTTP: Identity Engine",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Identity Engine": {
+        "main": [
+          [
+            {
+              "node": "IF: RUT Válido",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: RUT Válido": {
+        "main": [
+          [
+            {
+              "node": "HTTP: Order Engine",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Send RUT Inválido",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Order Engine": {
+        "main": [
+          [
+            {
+              "node": "HTTP: Payment Engine",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Payment Engine": {
+        "main": [
+          [
+            {
+              "node": "Send Payment Link",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Payment Link": {
+        "main": [
+          [
+            {
+              "node": "Respond Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send RUT Inválido": {
+        "main": [
+          [
+            {
+              "node": "Respond Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook Flow.cl": {
+        "main": [
+          [
+            {
+              "node": "HTTP: Confirm Payment",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Confirm Payment": {
+        "main": [
+          [
+            {
+              "node": "Send Confirmation",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Confirmation": {
+        "main": [
+          [
+            {
+              "node": "Respond Flow",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "v5-smarteros-sales-engine",
+    "meta": {
+      "instanceId": "smarteros-v5"
+    },
+    "id": "smarteros-v5-venta-conversacional",
+    "name": "SmarterOS v5 - Venta Conversacional",
+    "tags": [
+      {
+        "name": "smarteros"
+      },
+      {
+        "name": "ventas"
+      },
+      {
+        "name": "chile"
+      }
+    ]
+  }
+]
