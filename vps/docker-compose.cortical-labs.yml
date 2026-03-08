@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════
+# CORTICAL LABS BRIDGE - Docker Compose for Dokploy
+# ═══════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  cortical-labs-bridge:
+    build:
+      context: ./cortical-labs-bridge
+      dockerfile: Dockerfile
+    container_name: smarteros-cortical-labs-bridge
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+      - CORTICAL_LABS_API_BASE=https://api.cortical-labs.com/v1
+      - CORTICAL_LABS_API_KEY=${CORTICAL_LABS_API_KEY:-}
+      - BRIDGE_API_KEY=${BRIDGE_API_KEY:-smarteros_demo_key}
+    volumes:
+      - ./cortical-labs-bridge:/app
+      - /app/__pycache__
+      - ./logs:/app/logs
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.smarteros.service=cortical-labs-bridge"
+      - "com.smarteros.version=1.0.0"
+      - "com.smarteros.description=Biological Computing Integration"
+
+# Add to existing SmarterOS network
+networks:
+  smarteros-net:
+    driver: bridge
+    name: smarteros-network
+    external: true
