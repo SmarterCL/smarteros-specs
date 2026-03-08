@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════
+# BIO-AI BRIDGE - Docker Compose for Dokploy
+# Latam-GPT + Cortical Labs Integration
+# ═══════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  bio-ai-bridge:
+    build:
+      context: ./bio-ai-bridge
+      dockerfile: Dockerfile
+    container_name: smarteros-bio-ai-bridge
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - LATAM_GPT_API=https://api-inference.huggingface.co/models/latam-gpt/latam-gpt-7b
+      - CORTICAL_LABS_API=https://api.cortical-labs.com/v1
+      - HF_TOKEN=${HF_TOKEN:-}
+      - CL_API_KEY=${CL_API_KEY:-}
+      - BRIDGE_API_KEY=${BRIDGE_API_KEY:-smarteros_bio_2026}
+    volumes:
+      - ./bio-ai-bridge:/app
+      - /app/__pycache__
+      - ./logs:/app/logs
+    networks:
+      - smarteros-net
+    restart: unless-stopped
+    labels:
+      - "com.smarteros.service=bio-ai-bridge"
+      - "com.smarteros.version=1.0.0"
+      - "com.smarteros.description=Latam-GPT + Cortical Labs Bio-AI Bridge"
+      - "com.smarteros.domain=bio-api.smarter.cl"
+
+networks:
+  smarteros-net:
+    driver: bridge
+    name: smarteros-network
+    external: true
