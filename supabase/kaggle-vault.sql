@@ -27,7 +27,8 @@ INSERT INTO vault.credentials (service_name, credential_key, credential_value)
 VALUES 
   ('kaggle', 'username', 'smarteros'),
   ('kaggle', 'account_number', '32823079'),
-  ('kaggle', 'api_token', 'KGAT_91523dd381d26283c4a97316d182a05b')
+  ('kaggle', 'api_token', 'KGAT_91523dd381d26283c4a97316d182a05b'),
+  ('kaggle', 'api_key', 'd4eddfe2b7080da2be8a16aff890e7fe')
 ON CONFLICT (service_name, credential_key) 
 DO UPDATE SET 
   credential_value = EXCLUDED.credential_value,
